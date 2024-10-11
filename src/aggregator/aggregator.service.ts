@@ -57,7 +57,9 @@ export class AggregatorService {
   }
 
   async checkTHVrtk(address: string): Promise<ReturnTHVrtkType> {
-    const url = `http://localhost:8080/api/v1/rtkCRM/getTHVonAddress?address=${address}`;
+    const urlService = this.configService.get('RTK_SERVICE');
+    console.log(urlService);
+    const url = `${urlService}/getTHVonAddress?address=${address}`;
     const headers = {
       'Content-Type': 'application/json',
     };
