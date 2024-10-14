@@ -7,26 +7,22 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: WinstonModule.createLogger({
       transports: [
+        // Транспорт для консоли
         new winston.transports.Console({
           format: winston.format.combine(
             winston.format.timestamp(),
-            winston.format.json(), // Логирование в формате JSON для консоли
+            winston.format.colorize(), // Добавляем цвет для удобства чтения
+            winston.format.printf(({ timestamp, level, message, context }) => {
+              return `${timestamp} [${level}] ${message} ${context ? context : ''}`; // Читабельный формат для консоли
+            }),
           ),
         }),
+        // Транспорт для файла
         new winston.transports.File({
           filename: 'logs/application.log',
           format: winston.format.combine(
             winston.format.timestamp(),
-            winston.format.printf(({ timestamp, level, message, context }) => {
-              const decodedMessage = decodeURIComponent(message); // Декодируем сообщение
-              const logEntry = {
-                timestamp,
-                level,
-                message: decodedMessage, // Используем декодированное сообщение
-                context,
-              };
-              return JSON.stringify(logEntry); // Преобразуем в JSON-формат
-            }),
+            winston.format.json(), // Логирование в формате JSON для файла
           ),
         }),
       ],

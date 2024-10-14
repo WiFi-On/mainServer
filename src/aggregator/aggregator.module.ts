@@ -18,6 +18,8 @@ import { TariffsRepository } from './repositories/tariffs.repository';
 import { ProvidersRepository } from './repositories/providers.repository';
 import { DistrictsRepository } from './repositories/districts.repository';
 
+import { DadataService } from '../dadata/dadata.service';
+
 @Module({
   imports: [
     ConfigModule,
@@ -39,7 +41,14 @@ import { DistrictsRepository } from './repositories/districts.repository';
     TariffsRepository,
     ProvidersRepository,
     DistrictsRepository,
+    DadataService,
   ],
-  exports: [AggregatorService],
+  exports: [
+    AggregatorService,
+    AggregatorModule,
+    TariffsRepository,
+    ProvidersRepository,
+    DistrictsRepository,
+  ],
 })
 export class AggregatorModule {}

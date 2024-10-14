@@ -11,6 +11,8 @@ import { TariffsRepository } from './repositories/tariffs.repository';
 import { ProvidersRepository } from './repositories/providers.repository';
 import { DistrictsRepository } from './repositories/districts.repository';
 
+import { DadataService } from '../dadata/dadata.service';
+
 import * as crypto from 'crypto'; // Импортируем crypto для хеширования
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
@@ -24,63 +26,18 @@ export class AggregatorService {
     private readonly districtsRepository: DistrictsRepository,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly dadataService: DadataService,
   ) {}
-
+  // Утилиты
   async hashAddress(address: string): Promise<string> {
     const hash = crypto.createHash('md5').update(address).digest('hex');
     return hash;
   }
-
-  async getDistrictFiasIDonIP(ip: string): Promise<string> {
-    const url =
-      'http://suggestions.dadata.ru/suggestions/api/4_1/rs/iplocate/address';
-    const key = this.configService.get('DADATA_KEY');
-    const headers = {
-      Authorization: `Token ${key}`,
-      'Content-Type': 'application/json',
-    };
-    const body = {
-      ip: ip,
-    };
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post(url, body, { headers }),
-      );
-
-      const data = response.data;
-      const districtId = data.location.fias_id;
-      return districtId;
-    } catch (error) {
-      console.error('Ошибка при выполнении запроса:', error);
-      throw new Error('Не удалось получить данные района');
-    }
-  }
-
-  async checkTHVrtk(address: string): Promise<ReturnTHVrtkType> {
-    const urlService = this.configService.get('RTK_SERVICE');
-    console.log(urlService);
-    const url = `${urlService}/getTHVonAddress?address=${address}`;
-    const headers = {
-      'Content-Type': 'application/json',
-    };
-
-    try {
-      const response = await firstValueFrom(
-        this.httpService.get(url, { headers }),
-      );
-
-      const data = response.data;
-      return data;
-    } catch (error) {
-      throw new Error(`Не удалось проверить адреc: ${error}`);
-    }
-  }
-
+  // Для работы с тарифами
   async getTariff(id: number): Promise<Tariff> {
     const tariff = await this.tariffsRepository.getTariffById(id);
     return tariff;
   }
-
   async getTariffsOnAddressByAddress(
     address: string,
     providerIds: number[] = [], // Значение по умолчанию
@@ -102,7 +59,6 @@ export class AggregatorService {
 
     return tariffs;
   }
-
   async getTariffsOnAddressByHash(
     hashAddress: string,
     providerIds: number[] = [], // Значение по умолчанию
@@ -123,7 +79,35 @@ export class AggregatorService {
 
     return tariffs;
   }
+  async getTarrifsRTKOnAddress(address: string): Promise<Tariff[] | false> {
+    const checkTHV = await this.checkTHVrtk(address);
+    if (!checkTHV) {
+      return false;
+    }
+    // Проверка наличия Thv с условием
+    const hasThv = checkTHV.Thv.some(
+      (item) => item.Res === 'Y' || item.Res === 'U',
+    );
+    // Проверка, получение, возвращение Тарифов с условием
+    if (hasThv) {
+      return await this.tariffsRepository.getTariffsByDistrictIdAndProviderId(
+        checkTHV.DistrictFiasId,
+        10,
+      );
+    } else {
+      return false;
+    }
+  }
+  async getTariffsOnDistrict(engNameDistrict: string): Promise<Tariff[]> {
+    const tariffs =
+      await this.tariffsRepository.getTariffsByDistrictEngName(engNameDistrict);
+    const tariffsAvatell =
+      await this.tariffsRepository.getTariffsByProviderId(6);
 
+    tariffs.push(...tariffsAvatell);
+    return tariffs;
+  }
+  // Для работы с провайдерами
   async getProvidersOnAddressByAddress(
     address: string,
     providerIds: number[] = [],
@@ -151,7 +135,6 @@ export class AggregatorService {
 
     return providers;
   }
-
   async getProvidersOnAddressByHash(
     hashAddress: string,
     providerIds: number[] = [],
@@ -178,7 +161,6 @@ export class AggregatorService {
 
     return providers;
   }
-
   async getProvidersOnDistrict(engNameDistrict: string): Promise<Provider[]> {
     const providers =
       await this.providersRepository.getProvidersByDistrictEngName(
@@ -188,26 +170,15 @@ export class AggregatorService {
     providers.push({ id: 6, name: 'Avatell', tariffs: [] });
     return providers;
   }
-
-  async getTariffsOnDistrict(engNameDistrict: string): Promise<Tariff[]> {
-    const tariffs =
-      await this.tariffsRepository.getTariffsByDistrictEngName(engNameDistrict);
-    const tariffsAvatell =
-      await this.tariffsRepository.getTariffsByProviderId(6);
-
-    tariffs.push(...tariffsAvatell);
-    return tariffs;
-  }
-
+  // Для работы с населенными пунктами
   async getAllDistricts(): Promise<string[]> {
     const districts = await this.districtsRepository.getAllDistricts();
     const districtsEngNames = districts.map((district) => district.engname);
 
     return districtsEngNames;
   }
-
   async getDistrictByIP(ip: string): Promise<string[]> {
-    const districtsFiasID = await this.getDistrictFiasIDonIP(ip);
+    const districtsFiasID = await this.dadataService.getDistrictFiasIDonIP(ip);
     const districtEngName =
       await this.districtsRepository.getDistrictEngNameByFiasID(
         districtsFiasID,
@@ -215,13 +186,11 @@ export class AggregatorService {
 
     return Array(districtEngName);
   }
-
   async getInfoDistrictByEngName(engName: string): Promise<District> {
     const district =
       await this.districtsRepository.getDistrictInfoByEngName(engName);
     return district;
   }
-
   async getDistrictEngNameByFiasID(
     fiasID: string,
   ): Promise<{ engNameDistrict: string }> {
@@ -231,24 +200,24 @@ export class AggregatorService {
       engNameDistrict: district,
     };
   }
+  // Для работы с Ростелеком
+  async checkTHVrtk(address: string): Promise<ReturnTHVrtkType> {
+    const urlService = this.configService.get('RTK_SERVICE');
+    console.log(urlService);
+    const url = `${urlService}/getTHVonAddress?address=${address}`;
+    const headers = {
+      'Content-Type': 'application/json',
+    };
 
-  async getTarrifsRTKOnAddress(address: string): Promise<Tariff[] | false> {
-    const checkTHV = await this.checkTHVrtk(address);
-    if (!checkTHV) {
-      return false;
-    }
-    // Проверка наличия Thv с условием
-    const hasThv = checkTHV.Thv.some(
-      (item) => item.Res === 'Y' || item.Res === 'U',
-    );
-    // Проверка, получение, возвращение Тарифов с условием
-    if (hasThv) {
-      return await this.tariffsRepository.getTariffsByDistrictIdAndProviderId(
-        checkTHV.DistrictFiasId,
-        10,
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(url, { headers }),
       );
-    } else {
-      return false;
+
+      const data = response.data;
+      return data;
+    } catch (error) {
+      throw new Error(`Не удалось проверить адреc: ${error}`);
     }
   }
 }

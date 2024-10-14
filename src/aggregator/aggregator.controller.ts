@@ -6,6 +6,7 @@ import {
   NotFoundException,
   Logger,
 } from '@nestjs/common';
+
 import { Request } from 'express';
 
 import { AggregatorService } from './aggregator.service';
@@ -28,7 +29,6 @@ import {
   GetDistrictInfoDto,
   GetDistrictEngNameByFiasIDDto,
 } from './dtos/districts.dtos';
-
 import { GetTarrifsRTKOnAddressDto } from './dtos/rtk.dtos';
 
 @Controller('api/v1/aggregator')

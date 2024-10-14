@@ -1,8 +1,10 @@
 //src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AggregatorModule } from './aggregator/aggregator.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { AggregatorModule } from './aggregator/aggregator.module';
+import { ExcelModule } from './excel/excel.module';
 
 @Module({
   imports: [
@@ -18,7 +20,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       logging: ['error'],
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
     }),
-    AggregatorModule, // Подключите AggregatorModule сюда
+    AggregatorModule,
+    ExcelModule,
   ],
 })
 export class AppModule {}
