@@ -37,6 +37,12 @@ export class AggregatorController {
 
   constructor(private readonly aggregatorService: AggregatorService) {}
 
+  // Утилиты
+  private getIpFromHeaders(request: Request): string {
+    return Array.isArray(request.headers['x-client-ip'])
+      ? request.headers['x-client-ip'][0]
+      : (request.headers['x-client-ip'] as string);
+  }
   // Работа с тарифами
   @Get('/get/tariff')
   async getTariff(
@@ -368,11 +374,6 @@ export class AggregatorController {
       );
       throw error;
     }
-  }
-  private getIpFromHeaders(request: Request): string {
-    return Array.isArray(request.headers['x-client-ip'])
-      ? request.headers['x-client-ip'][0]
-      : (request.headers['x-client-ip'] as string);
   }
   @Get('/get/district')
   async getDistrictOnIP(@Req() request: Request): Promise<string[]> {
