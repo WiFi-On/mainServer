@@ -370,9 +370,9 @@ export class AggregatorController {
     }
   }
   private getIpFromHeaders(request: Request): string {
-    return Array.isArray(request.headers['x-forwarded-for'])
-      ? request.headers['x-forwarded-for'][0]
-      : (request.headers['x-forwarded-for'] as string);
+    return Array.isArray(request.headers['x-client-ip'])
+      ? request.headers['x-client-ip'][0]
+      : (request.headers['x-client-ip'] as string);
   }
   @Get('/get/district')
   async getDistrictOnIP(@Req() request: Request): Promise<string[]> {
