@@ -375,7 +375,7 @@ export class AggregatorController {
       : (request.headers['x-client-ip'] as string);
   }
   @Get('/get/district')
-  async getDistrictOnIP(@Req() request: Request): Promise<string> {
+  async getDistrictOnIP(@Req() request: Request): Promise<string[]> {
     const clientIp =
       request.ip ||
       request.socket.remoteAddress ||
@@ -384,8 +384,7 @@ export class AggregatorController {
     const startTime = Date.now();
 
     try {
-      const district = await this.aggregatorService.getDistrictByIP(clientIp);
-      const result = district[0];
+      const result = await this.aggregatorService.getDistrictByIP(clientIp);
 
       const endTime = Date.now();
       const executionTime = endTime - startTime;
