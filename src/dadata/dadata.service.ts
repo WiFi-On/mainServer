@@ -41,7 +41,7 @@ export class DadataService {
   }
 
   async getDistrictFiasIDonIP(ip: string): Promise<string> {
-    const apiKey = this.configService.get<string>('DADATA_API_KEY');
+    const apiKey = this.configService.get<string>('DADATA_KEY');
     const url =
       'http://suggestions.dadata.ru/suggestions/api/4_1/rs/iplocate/address';
 
