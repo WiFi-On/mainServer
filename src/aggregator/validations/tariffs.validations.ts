@@ -7,13 +7,13 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
-export class GetTariffDto {
+export class GetTariffValidation {
   @IsInt()
   @IsNotEmpty({ message: 'ID не может быть пустым.' })
   @Transform(({ value }) => parseInt(value, 10), { toClassOnly: true })
   id: number;
 }
-export class GetTariffsOnAddressDto {
+export class GetTariffsOnAddressValidation {
   @IsNotEmpty({ message: 'Адрес не может быть пустым.' })
   @IsString({ message: 'Адрес должен быть строкой.' })
   address: string;
@@ -26,7 +26,7 @@ export class GetTariffsOnAddressDto {
   })
   providers?: number[];
 }
-export class GetTariffsOnHashAddressDto {
+export class GetTariffsOnHashAddressValidation {
   @IsNotEmpty({ message: 'Hash не может быть пустым.' })
   @IsString({ message: 'Hash должен быть строкой.' })
   hash: string;
@@ -40,7 +40,7 @@ export class GetTariffsOnHashAddressDto {
   providers?: number[];
 }
 
-export class GetTariffsOnDistrictDto {
+export class GetTariffsOnDistrictValidation {
   @IsNotEmpty({ message: 'District не может быть пустым.' })
   @IsString({ message: 'District должен быть строкой.' })
   district: string;

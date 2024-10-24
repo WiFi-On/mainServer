@@ -1,7 +1,7 @@
 import { IsOptional, IsNotEmpty, IsString, IsArray } from 'class-validator';
 import { Transform } from 'class-transformer';
 
-export class GetProvidersOnAddressDto {
+export class GetProvidersOnAddressValidation {
   @IsNotEmpty({ message: 'Address не может быть пустым.' })
   @IsString({ message: 'Address должен быть строкой.' })
   address: string;
@@ -15,7 +15,7 @@ export class GetProvidersOnAddressDto {
   providers?: number[];
 }
 
-export class GetProvidersOnHashAddressDto {
+export class GetProvidersOnHashAddressValidation {
   @IsNotEmpty({ message: 'HashAddress не может быть пустым.' })
   @IsString({ message: 'HashAddress должен быть строкой.' })
   hashAddress: string;
@@ -29,7 +29,7 @@ export class GetProvidersOnHashAddressDto {
   providers?: number[];
 }
 
-export class GetProvidersOnDistrictDto {
+export class GetProvidersOnDistrictValidation {
   @IsNotEmpty({ message: 'District не может быть пустым.' })
   @IsString({ message: 'District должен быть строкой.' })
   district: string;

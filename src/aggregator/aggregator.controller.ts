@@ -1,3 +1,4 @@
+// Nest
 import {
   Controller,
   Get,
@@ -5,31 +6,37 @@ import {
   Query,
   NotFoundException,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
-
 import { Request } from 'express';
-
+// Services
 import { AggregatorService } from './aggregator.service';
+// Entities
+import { Tariff } from '../db/entities/tariff.entity';
+import { Provider } from '../db/entities/provider.entity';
+// DTOS
+import {
+  GetTariffValidation,
+  GetTariffsOnAddressValidation,
+  GetTariffsOnDistrictValidation,
+  GetTariffsOnHashAddressValidation,
+} from './validations/tariffs.validations';
+import {
+  GetProvidersOnAddressValidation,
+  GetProvidersOnDistrictValidation,
+  GetProvidersOnHashAddressValidation,
+} from './validations/providers.validations';
+import {
+  GetDistrictInfoValidation,
+  GetDistrictEngNameByFiasIDValidation,
+} from './validations/districts.validations';
+import { GetTarrifsRTKOnAddressValidation } from './validations/rtk.validations';
 
-import { Tariff } from './entities/tariff.entity';
-import { Provider } from './entities/provider.entity';
-
-import {
-  GetTariffDto,
-  GetTariffsOnAddressDto,
-  GetTariffsOnDistrictDto,
-  GetTariffsOnHashAddressDto,
-} from './dtos/tariffs.dtos';
-import {
-  GetProvidersOnAddressDto,
-  GetProvidersOnDistrictDto,
-  GetProvidersOnHashAddressDto,
-} from './dtos/providers.dtos';
-import {
-  GetDistrictInfoDto,
-  GetDistrictEngNameByFiasIDDto,
-} from './dtos/districts.dtos';
-import { GetTarrifsRTKOnAddressDto } from './dtos/rtk.dtos';
+// Guards
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ActiveGuard } from '../auth/guards/active.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/role.decorator';
 
 @Controller('api/v1/aggregator')
 export class AggregatorController {
@@ -44,9 +51,11 @@ export class AggregatorController {
       : (request.headers['x-client-ip'] as string);
   }
   // Работа с тарифами
+  @UseGuards(JwtAuthGuard, ActiveGuard, RolesGuard)
+  @Roles('partnerAvatell')
   @Get('/get/tariff')
   async getTariff(
-    @Query() query: GetTariffDto,
+    @Query() query: GetTariffValidation,
     @Req() request: Request,
   ): Promise<Tariff> {
     const clientIp = request.ip || request.socket.remoteAddress;
@@ -59,16 +68,17 @@ export class AggregatorController {
       if (!result) {
         const endTime = Date.now(); // Запоминаем время завершения выполнения
         const executionTime = endTime - startTime; // Вычисляем время выполнения
-        throw new NotFoundException(
+        this.logger.error(
           `Tariff not found. ID: ${query.id} || IP: ${clientIp} || PATH: ${requestPath} || TIME: ${executionTime} мс`,
         );
+        throw new NotFoundException(`Tariff not found. ID: ${query.id}`);
       }
 
       const endTime = Date.now(); // Запоминаем время завершения выполнения
       const executionTime = endTime - startTime; // Вычисляем время выполнения
 
       this.logger.log(
-        `Tarriffs found. ID: ${query.id} || IP: ${clientIp} PATH: ${requestPath} || TIME: ${executionTime} мс`,
+        `Tarriff found. ID: ${query.id} || IP: ${clientIp} PATH: ${requestPath} || TIME: ${executionTime} мс`,
       );
       return result;
     } catch (error) {
@@ -84,7 +94,7 @@ export class AggregatorController {
   }
   @Get('/get/tariffs/onAddress')
   async getTariffsOnAddress(
-    @Query() query: GetTariffsOnAddressDto,
+    @Query() query: GetTariffsOnAddressValidation,
     @Req() request: Request,
   ): Promise<Tariff[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
@@ -101,10 +111,10 @@ export class AggregatorController {
       if (!result.length) {
         const endTime = Date.now();
         const executionTime = endTime - startTime;
-
-        throw new NotFoundException(
+        this.logger.error(
           `No tariff. ADDRESS: ${address} || IP: ${clientIp} || PATH: ${requestPath} || Время выполнения: ${executionTime} мс`,
         );
+        throw new NotFoundException(`No tariff. ADDRESS: ${address}`);
       }
 
       const endTime = Date.now();
@@ -128,7 +138,7 @@ export class AggregatorController {
   }
   @Get('/get/tariffs/onHashAddress')
   async getTariffsOnHashAddress(
-    @Query() query: GetTariffsOnHashAddressDto,
+    @Query() query: GetTariffsOnHashAddressValidation,
     @Req() request: Request,
   ): Promise<Tariff[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
@@ -146,9 +156,10 @@ export class AggregatorController {
         const endTime = Date.now();
         const executionTime = endTime - startTime;
 
-        throw new NotFoundException(
+        this.logger.error(
           `No tariff. HASH: ${hash} || IP: ${clientIp} || PATH: ${requestPath} || Время выполнения: ${executionTime} мс`,
         );
+        throw new NotFoundException(`No tariff. HASH: ${hash}`);
       }
 
       const endTime = Date.now();
@@ -172,7 +183,7 @@ export class AggregatorController {
   }
   @Get('/get/tariffs/onDistrict')
   async getTariffsOnDistrict(
-    @Query() query: GetTariffsOnDistrictDto,
+    @Query() query: GetTariffsOnDistrictValidation,
     @Req() request: Request,
   ): Promise<Tariff[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
@@ -188,9 +199,10 @@ export class AggregatorController {
         const endTime = Date.now();
         const executionTime = endTime - startTime;
 
-        throw new NotFoundException(
+        this.logger.error(
           `No tariff. DISTRICT: ${district} || IP: ${clientIp} || PATH: ${requestPath} || Время выполнения: ${executionTime} мс`,
         );
+        throw new NotFoundException(`No tariff. DISTRICT: ${district}`);
       }
 
       const endTime = Date.now();
@@ -216,7 +228,7 @@ export class AggregatorController {
   // Работа с провайдерами
   @Get('/get/providers/onAddress')
   async getProvidersOnAddress(
-    @Query() query: GetProvidersOnAddressDto,
+    @Query() query: GetProvidersOnAddressValidation,
     @Req() request: Request,
   ): Promise<Provider[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
@@ -235,9 +247,10 @@ export class AggregatorController {
         const endTime = Date.now();
         const executionTime = endTime - startTime;
 
-        throw new NotFoundException(
+        this.logger.error(
           `No providers. ADDRESS: ${address} || IP: ${clientIp} || PATH: ${requestPath} || Время выполнения: ${executionTime} мс`,
         );
+        throw new NotFoundException(`No providers. ADDRESS: ${address}`);
       }
 
       const endTime = Date.now();
@@ -261,7 +274,7 @@ export class AggregatorController {
   }
   @Get('/get/providers/onHashAddress')
   async getProvidersOnHashAddress(
-    @Query() query: GetProvidersOnHashAddressDto,
+    @Query() query: GetProvidersOnHashAddressValidation,
     @Req() request: Request,
   ): Promise<Provider[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
@@ -279,9 +292,10 @@ export class AggregatorController {
         const endTime = Date.now();
         const executionTime = endTime - startTime;
 
-        throw new NotFoundException(
+        this.logger.error(
           `No providers. HASH: ${hashAddress} || IP: ${clientIp} || PATH: ${requestPath} || Время выполнения: ${executionTime} мс`,
         );
+        throw new NotFoundException(`No providers. HASH: ${hashAddress}`);
       }
 
       const endTime = Date.now();
@@ -305,7 +319,7 @@ export class AggregatorController {
   }
   @Get('/get/providers/onDistrict')
   async getProvidersOnDistrict(
-    @Query() query: GetProvidersOnDistrictDto,
+    @Query() query: GetProvidersOnDistrictValidation,
     @Req() request: Request,
   ): Promise<Provider[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
@@ -321,9 +335,10 @@ export class AggregatorController {
         const endTime = Date.now();
         const executionTime = endTime - startTime;
 
-        throw new NotFoundException(
+        this.logger.error(
           `No providers. DISTRICT: ${district} || IP: ${clientIp} || PATH: ${requestPath} || Время выполнения: ${executionTime} мс`,
         );
+        throw new NotFoundException(`No providers. DISTRICT: ${district}`);
       }
 
       const endTime = Date.now();
@@ -408,7 +423,7 @@ export class AggregatorController {
   }
   @Get('/get/districtInfo')
   async getDistrictInfo(
-    @Query() query: GetDistrictInfoDto,
+    @Query() query: GetDistrictInfoValidation,
     @Req() request: Request,
   ): Promise<any> {
     const clientIp = request.ip || request.socket.remoteAddress;
@@ -441,7 +456,7 @@ export class AggregatorController {
   }
   @Get('/get/districtEngName/onFiasID')
   async getDistrictEngNameByFiasID(
-    @Query() query: GetDistrictEngNameByFiasIDDto,
+    @Query() query: GetDistrictEngNameByFiasIDValidation,
     @Req() request: Request,
   ): Promise<{ engNameDistrict: string }> {
     const clientIp = request.ip || request.socket.remoteAddress;
@@ -476,7 +491,7 @@ export class AggregatorController {
   // Работа с ростелекомом
   @Get('/get/tarrifsRTK/onAddress')
   async getTarrifsRTKOnAddress(
-    @Query() query: GetTarrifsRTKOnAddressDto,
+    @Query() query: GetTarrifsRTKOnAddressValidation,
     @Req() request: Request,
   ): Promise<Tariff[] | boolean> {
     const clientIp = request.ip || request.socket.remoteAddress;

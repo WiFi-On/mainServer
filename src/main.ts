@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as winston from 'winston';
 import { WinstonModule } from 'nest-winston';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -29,6 +30,7 @@ async function bootstrap() {
     }),
   });
 
+  app.useGlobalPipes(new ValidationPipe());
   app.enableCors();
   await app.listen(3010);
   console.log(`Application is running on: ${await app.getUrl()}`);

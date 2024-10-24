@@ -1,15 +1,19 @@
+// nest
 import { Module } from '@nestjs/common';
-import { ExcelService } from './excel.service';
-import { AggregatorService } from 'src/aggregator/aggregator.service';
-import { DadataService } from 'src/dadata/dadata.service';
-import { ExcelController } from './excel.controller';
-import { ConfigModule } from '@nestjs/config';
-
-import { AggregatorModule } from 'src/aggregator/aggregator.module';
 import { HttpModule } from '@nestjs/axios';
+import { ConfigModule } from '@nestjs/config';
+// service
+import { ExcelService } from './excel.service';
+import { DadataService } from 'src/dadata/dadata.service';
+import { AggregatorService } from 'src/aggregator/aggregator.service';
+// controller
+import { ExcelController } from './excel.controller';
+// module
+import { AggregatorModule } from 'src/aggregator/aggregator.module';
+import { DbModule } from 'src/db/db.module';
 
 @Module({
-  imports: [ConfigModule, AggregatorModule, HttpModule],
+  imports: [ConfigModule, AggregatorModule, HttpModule, DbModule],
   controllers: [ExcelController],
   providers: [ExcelService, AggregatorService, DadataService],
   exports: [ExcelService],

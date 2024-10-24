@@ -1,22 +1,21 @@
-// src/aggregator/aggregator.service.ts
 import { Injectable } from '@nestjs/common';
 
-import { Tariff } from './entities/tariff.entity';
-import { Provider } from './entities/provider.entity';
-import { District } from './entities/district.entity';
+import { Tariff } from '../db/entities/tariff.entity';
+import { Provider } from '../db/entities/provider.entity';
+import { District } from '../db/entities/district.entity';
 
 import { ReturnTHVrtkType } from './models/returnDataService.models';
 
-import { TariffsRepository } from './repositories/tariffs.repository';
-import { ProvidersRepository } from './repositories/providers.repository';
-import { DistrictsRepository } from './repositories/districts.repository';
-
 import { DadataService } from '../dadata/dadata.service';
 
-import * as crypto from 'crypto'; // Импортируем crypto для хеширования
+import * as crypto from 'crypto';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
+
+import { TariffsRepository } from '../db/repositories/tariffs.repository';
+import { ProvidersRepository } from '../db/repositories/providers.repository';
+import { DistrictsRepository } from '../db/repositories/districts.repository';
 
 @Injectable()
 export class AggregatorService {
@@ -203,7 +202,6 @@ export class AggregatorService {
   // Для работы с Ростелеком
   async checkTHVrtk(address: string): Promise<ReturnTHVrtkType> {
     const urlService = this.configService.get('RTK_SERVICE');
-    console.log(urlService);
     const url = `${urlService}/getTHVonAddress?address=${address}`;
     const headers = {
       'Content-Type': 'application/json',

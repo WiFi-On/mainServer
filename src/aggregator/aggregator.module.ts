@@ -1,54 +1,20 @@
-//src/modules/aggregator/aggregator.module.ts
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 
-import { District } from './entities/district.entity';
-import { Provider } from './entities/provider.entity';
-import { Tariff } from './entities/tariff.entity';
-import { Email } from './entities/email.entity';
-import { ProviderOnStreet } from './entities/provideronstreet.entity';
-import { Street } from './entities/street.entity';
-import { TechologiesOnStreet } from './entities/techologiesonstreet.entity';
-
 import { AggregatorController } from './aggregator.controller';
 import { AggregatorService } from './aggregator.service';
-import { TariffsRepository } from './repositories/tariffs.repository';
-import { ProvidersRepository } from './repositories/providers.repository';
-import { DistrictsRepository } from './repositories/districts.repository';
-
 import { DadataService } from '../dadata/dadata.service';
+import { UserService } from 'src/user/user.service';
+
+import { UserModule } from '../user/user.module';
+import { DadataModule } from 'src/dadata/dadata.module';
+import { DbModule } from 'src/db/db.module'; // Импортируйте ваш DbModule
 
 @Module({
-  imports: [
-    ConfigModule,
-    HttpModule,
-    TypeOrmModule.forFeature([
-      District,
-      Provider,
-      Tariff,
-      TariffsRepository,
-      Email,
-      ProviderOnStreet,
-      Street,
-      TechologiesOnStreet,
-    ]),
-  ],
+  imports: [ConfigModule, HttpModule, UserModule, DadataModule, DbModule],
   controllers: [AggregatorController],
-  providers: [
-    AggregatorService,
-    TariffsRepository,
-    ProvidersRepository,
-    DistrictsRepository,
-    DadataService,
-  ],
-  exports: [
-    AggregatorService,
-    AggregatorModule,
-    TariffsRepository,
-    ProvidersRepository,
-    DistrictsRepository,
-  ],
+  providers: [AggregatorService, DadataService, UserService],
+  exports: [AggregatorService],
 })
 export class AggregatorModule {}
