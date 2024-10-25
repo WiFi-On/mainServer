@@ -17,7 +17,7 @@ import { BitrixModule } from './bitrix/bitrix.module';
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       type: process.env.DB_TYPE as 'postgres',
-      host: 'localhost',
+      host: process.env.DB_HOST,
       port: parseInt(process.env.DB_PORT, 10),
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,

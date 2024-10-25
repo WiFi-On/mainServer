@@ -70,7 +70,6 @@ export class PartnerService {
       throw new Error(`Ошибка при добавлении лида: ${error.message}`);
     }
 
-    console.log('Занесено в базу:', lead);
     let contact: BitrixReturnData;
     try {
       contact = await this.bitrixService.createContact(
@@ -88,8 +87,6 @@ export class PartnerService {
       );
     }
 
-    console.log('Создан контакт:', contact);
-    console.log(this.idsBitrix[idPartner]);
     let deal: BitrixReturnData;
     try {
       deal = await this.bitrixService.createDeal(
@@ -100,7 +97,6 @@ export class PartnerService {
         idLead,
       );
 
-      console.log('Создана сделка:', deal);
       result.idLeadBitrix = deal.result;
     } catch (error) {
       throw new Error(`Ошибка при создании сделки в Bitrix: ${error.message}`);
