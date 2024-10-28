@@ -6,7 +6,6 @@ import {
   Query,
   NotFoundException,
   Logger,
-  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 // Services
@@ -32,12 +31,6 @@ import {
 } from './validations/districts.validations';
 import { GetTarrifsRTKOnAddressValidation } from './validations/rtk.validations';
 
-// Guards
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ActiveGuard } from '../auth/guards/active.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/role.decorator';
-
 @Controller('api/v1/aggregator')
 export class AggregatorController {
   private readonly logger = new Logger(AggregatorController.name);
@@ -51,8 +44,6 @@ export class AggregatorController {
       : (request.headers['x-client-ip'] as string);
   }
   // Работа с тарифами
-  @UseGuards(JwtAuthGuard, ActiveGuard, RolesGuard)
-  @Roles('partnerAvatell')
   @Get('/get/tariff')
   async getTariff(
     @Query() query: GetTariffValidation,
