@@ -33,7 +33,14 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
 
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: (origin, callback) => {
+      const allowedOrigins = ['http://localhost:3000', 'https://on-wifi.ru'];
+      if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
