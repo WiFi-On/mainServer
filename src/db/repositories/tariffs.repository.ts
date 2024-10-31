@@ -63,6 +63,17 @@ export class TariffsRepository {
     }
   }
 
+  async getAllTariffsIds(): Promise<number[]> {
+    try {
+      const tariffs = await this.tariffRepository.find({
+        select: ['id'],
+      });
+      return tariffs.map((tariff) => tariff.id);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async getTariffsByProviderId(providerId: number): Promise<Tariff[]> {
     try {
       const tariffs = await this.tariffRepository.find({

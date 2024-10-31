@@ -31,7 +31,13 @@ async function bootstrap() {
   });
 
   app.useGlobalPipes(new ValidationPipe());
-  app.enableCors();
+
+  app.enableCors({
+    origin: 'http://localhost:3000',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+
   await app.listen(3010);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }

@@ -215,6 +215,34 @@ export class AggregatorController {
       throw error;
     }
   }
+  @Get('/get/tariffsIds')
+  async getAllTariffsIds(@Req() request: Request): Promise<number[]> {
+    const clientIp = request.ip || request.socket.remoteAddress;
+    const requestPath = request.originalUrl;
+    const startTime = Date.now();
+
+    try {
+      const result = await this.aggregatorService.getAllTariffsIds();
+
+      const endTime = Date.now();
+      const executionTime = endTime - startTime;
+
+      this.logger.log(
+        `All id of tariffs found. IP: ${clientIp} || PATH: ${requestPath} || Время выполнения: ${executionTime} мс`,
+      );
+
+      return result;
+    } catch (error) {
+      const endTime = Date.now();
+      const executionTime = endTime - startTime;
+
+      this.logger.error(
+        `Error. IP: ${clientIp} || PATH: ${requestPath} || Время выполнения: ${executionTime} мс`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
 
   // Работа с провайдерами
   @Get('/get/providers/onAddress')

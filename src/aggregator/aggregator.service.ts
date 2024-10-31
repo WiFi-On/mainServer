@@ -106,6 +106,11 @@ export class AggregatorService {
     tariffs.push(...tariffsAvatell);
     return tariffs;
   }
+  async getAllTariffsIds(): Promise<number[]> {
+    const idsTariffs = await this.tariffsRepository.getAllTariffsIds();
+
+    return idsTariffs;
+  }
   // Для работы с провайдерами
   async getProvidersOnAddressByAddress(
     address: string,

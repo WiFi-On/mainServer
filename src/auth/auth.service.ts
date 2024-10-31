@@ -71,11 +71,7 @@ export class AuthService {
     await this.userService.updateTokenLifetime(id, token, tokenLifetime);
 
     return {
-      id,
-      email,
       token,
-      token_lifetime: tokenLifetime,
-      partner_id,
     };
   }
   async register(email: string, password: string): Promise<any> {
@@ -104,12 +100,7 @@ export class AuthService {
     await this.userService.updateTokenLifetime(user.id, token, tokenLifetime);
 
     return {
-      id: user.id,
-      email: user.email,
       token,
-      token_lifetime: tokenLifetime,
-      role,
-      isActive: false,
     };
   }
 }
