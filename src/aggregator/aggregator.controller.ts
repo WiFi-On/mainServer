@@ -13,7 +13,7 @@ import { AggregatorService } from './aggregator.service';
 // Entities
 import { Tariff } from '../db/entities/tariff.entity';
 import { Provider } from '../db/entities/provider.entity';
-// DTOS
+// Validations
 import {
   GetTariffValidation,
   GetTariffsOnAddressValidation,
@@ -30,7 +30,22 @@ import {
   GetDistrictEngNameByFiasIDValidation,
 } from './validations/districts.validations';
 import { GetTarrifsRTKOnAddressValidation } from './validations/rtk.validations';
+//swagger
+import {
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { TariffDTO, NoTariffDTO, NoTariffsDTO } from './dtos/tariff.dto';
+import { ProviderDTO, NoProvidersDTO } from './dtos/provider.dto';
+import {
+  DistrictInfoDTO,
+  NoDistrictsDTO,
+  NoDistrictDTO,
+} from './dtos/district.dto';
 
+@ApiTags('Aggregator')
 @Controller('api/v1/aggregator')
 export class AggregatorController {
   private readonly logger = new Logger(AggregatorController.name);
@@ -45,6 +60,9 @@ export class AggregatorController {
   }
   // Работа с тарифами
   @Get('/get/tariff')
+  @ApiOperation({ summary: 'Получение тарифа по ID' })
+  @ApiOkResponse({ description: 'Успешное получение тарифа', type: TariffDTO })
+  @ApiNotFoundResponse({ description: 'Тариф не найден', type: NoTariffDTO })
   async getTariff(
     @Query() query: GetTariffValidation,
     @Req() request: Request,
@@ -62,7 +80,7 @@ export class AggregatorController {
         this.logger.error(
           `Tariff not found. ID: ${query.id} || IP: ${clientIp} || PATH: ${requestPath} || TIME: ${executionTime} мс`,
         );
-        throw new NotFoundException(`Tariff not found. ID: ${query.id}`);
+        throw new NotFoundException(`Тариф не найден. ID: ${query.id}`);
       }
 
       const endTime = Date.now(); // Запоминаем время завершения выполнения
@@ -83,7 +101,14 @@ export class AggregatorController {
       throw error;
     }
   }
+
   @Get('/get/tariffs/onAddress')
+  @ApiOperation({ summary: 'Получение тарифов по адресу' })
+  @ApiOkResponse({
+    description: 'Успешное получение тарифов',
+    type: [TariffDTO],
+  })
+  @ApiNotFoundResponse({ description: 'Тарифы не найдены', type: NoTariffsDTO })
   async getTariffsOnAddress(
     @Query() query: GetTariffsOnAddressValidation,
     @Req() request: Request,
@@ -127,6 +152,13 @@ export class AggregatorController {
       throw error;
     }
   }
+
+  @ApiOperation({ summary: 'Получение тарифов по хэш адресу' })
+  @ApiOkResponse({
+    description: 'Успешное получение тарифов',
+    type: [TariffDTO],
+  })
+  @ApiNotFoundResponse({ description: 'Тарифы не найдены', type: NoTariffsDTO })
   @Get('/get/tariffs/onHashAddress')
   async getTariffsOnHashAddress(
     @Query() query: GetTariffsOnHashAddressValidation,
@@ -172,7 +204,14 @@ export class AggregatorController {
       throw error;
     }
   }
+
   @Get('/get/tariffs/onDistrict')
+  @ApiOperation({ summary: 'Получение тарифов по населенному пункту' })
+  @ApiOkResponse({
+    description: 'Успешное получение тарифов',
+    type: [TariffDTO],
+  })
+  @ApiNotFoundResponse({ description: 'Тарифы не найдены', type: NoTariffsDTO })
   async getTariffsOnDistrict(
     @Query() query: GetTariffsOnDistrictValidation,
     @Req() request: Request,
@@ -215,7 +254,14 @@ export class AggregatorController {
       throw error;
     }
   }
+
   @Get('/get/tariffsIds')
+  @ApiOperation({ summary: 'Получение id всех тарифов' })
+  @ApiOkResponse({
+    description: 'Успешное получение id всех тарифов',
+    type: [Number],
+  })
+  @ApiNotFoundResponse({ description: 'Тарифы не найдены', type: NoTariffsDTO })
   async getAllTariffsIds(@Req() request: Request): Promise<number[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
     const requestPath = request.originalUrl;
@@ -246,6 +292,15 @@ export class AggregatorController {
 
   // Работа с провайдерами
   @Get('/get/providers/onAddress')
+  @ApiOperation({ summary: 'Получение провайдеров по адресу' })
+  @ApiOkResponse({
+    description: 'Успешное получение провайдеров',
+    type: [ProviderDTO],
+  })
+  @ApiNotFoundResponse({
+    description: 'Провайдеры не найдены',
+    type: NoProvidersDTO,
+  })
   async getProvidersOnAddress(
     @Query() query: GetProvidersOnAddressValidation,
     @Req() request: Request,
@@ -292,6 +347,15 @@ export class AggregatorController {
     }
   }
   @Get('/get/providers/onHashAddress')
+  @ApiOperation({ summary: 'Получение провайдеров по hash адресу' })
+  @ApiOkResponse({
+    description: 'Успешное получение провайдеров',
+    type: [ProviderDTO],
+  })
+  @ApiNotFoundResponse({
+    description: 'Провайдеры не найдены',
+    type: NoProvidersDTO,
+  })
   async getProvidersOnHashAddress(
     @Query() query: GetProvidersOnHashAddressValidation,
     @Req() request: Request,
@@ -337,6 +401,15 @@ export class AggregatorController {
     }
   }
   @Get('/get/providers/onDistrict')
+  @ApiOperation({ summary: 'Получение провайдеров по населенному пункту' })
+  @ApiOkResponse({
+    description: 'Успешное получение провайдеров',
+    type: [ProviderDTO],
+  })
+  @ApiNotFoundResponse({
+    description: 'Провайдеры не найдены',
+    type: NoProvidersDTO,
+  })
   async getProvidersOnDistrict(
     @Query() query: GetProvidersOnDistrictValidation,
     @Req() request: Request,
@@ -382,6 +455,15 @@ export class AggregatorController {
 
   // Работа с населенными пунктами
   @Get('/get/allDistricts')
+  @ApiOperation({ summary: 'Получение всех населенных пунктов из базы' })
+  @ApiOkResponse({
+    description: 'Успешное получение населенных пунктов',
+    type: [String],
+  })
+  @ApiNotFoundResponse({
+    description: 'Населенные пункты не найдены',
+    type: NoDistrictsDTO,
+  })
   async getAllDistricts(@Req() request: Request): Promise<string[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
     const requestPath = request.originalUrl;
@@ -410,6 +492,15 @@ export class AggregatorController {
     }
   }
   @Get('/get/district')
+  @ApiOperation({ summary: 'Получение населенного пункта по IP' })
+  @ApiOkResponse({
+    description: 'Успешное получение населенного пункта',
+    type: [String],
+  })
+  @ApiNotFoundResponse({
+    description: 'Населенный пункт не найден',
+    type: NoDistrictDTO,
+  })
   async getDistrictOnIP(@Req() request: Request): Promise<string[]> {
     const clientIp =
       request.ip ||
@@ -441,6 +532,15 @@ export class AggregatorController {
     }
   }
   @Get('/get/districtInfo')
+  @ApiOperation({ summary: 'Получение информации о населенном пункте' })
+  @ApiOkResponse({
+    description: 'Успешное получение информации о населенном пункте',
+    type: DistrictInfoDTO,
+  })
+  @ApiNotFoundResponse({
+    description: 'Информация о населенном пункте не найдена',
+    type: NoDistrictDTO,
+  })
   async getDistrictInfo(
     @Query() query: GetDistrictInfoValidation,
     @Req() request: Request,
@@ -474,6 +574,17 @@ export class AggregatorController {
     }
   }
   @Get('/get/districtEngName/onFiasID')
+  @ApiOperation({
+    summary: 'Получение наименования населенного пункта по FiasID',
+  })
+  @ApiOkResponse({
+    description: 'Успешное получение наименования населенного пункта',
+    type: String,
+  })
+  @ApiNotFoundResponse({
+    description: 'Населенный пункт не найден',
+    type: NoDistrictDTO,
+  })
   async getDistrictEngNameByFiasID(
     @Query() query: GetDistrictEngNameByFiasIDValidation,
     @Req() request: Request,
@@ -509,6 +620,15 @@ export class AggregatorController {
 
   // Работа с ростелекомом
   @Get('/get/tarrifsRTK/onAddress')
+  @ApiOperation({ summary: 'Получение тарифов РТК по адресу' })
+  @ApiOkResponse({
+    description: 'Успешное получение тарифов РТК по адресу',
+    type: [Tariff],
+  })
+  @ApiNotFoundResponse({
+    description: 'Тарифы РТК не найдены',
+    type: NoTariffsDTO,
+  })
   async getTarrifsRTKOnAddress(
     @Query() query: GetTarrifsRTKOnAddressValidation,
     @Req() request: Request,
