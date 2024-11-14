@@ -11,6 +11,7 @@ import { PartnerModule } from './partner/partner.module';
 import { DbModule } from './db/db.module';
 import { DadataModule } from './dadata/dadata.module';
 import { BitrixModule } from './bitrix/bitrix.module';
+import { ScheduleModule } from './schedule/schedule.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { BitrixModule } from './bitrix/bitrix.module';
     PartnerModule,
     DadataModule,
     BitrixModule,
+    ScheduleModule,
   ],
   providers: [],
 })

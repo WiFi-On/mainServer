@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Body,
   Res,
   HttpStatus,
   HttpException,
@@ -16,16 +17,16 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { ActiveGuard } from '../auth/guards/active.guard';
 import { Roles } from '../auth/decorators/role.decorator';
 import { IsActive } from '../auth/decorators/activeUser.decorator';
+import { PartnerLeadsValidation } from './validations/partnerLeads.validation';
 
 @Controller('api/v1/excel')
 export class ExcelController {
-  constructor(private readonly excelTcService: ExcelService) {}
+  constructor(private readonly excelService: ExcelService) {}
 
   @Post('upload')
   @Roles('admin') // Укажите роль, которая имеет доступ
   @IsActive() // Проверка активности пользователя
   @UseGuards(JwtAuthGuard, ActiveGuard, RolesGuard) // Применение всех гвардов
-  @Post('upload')
   @UseInterceptors(FileInterceptor('file')) // Используйте FileInterceptor для обработки загрузки
   async uploadExcel(
     @UploadedFile() file: Express.Multer.File,
@@ -37,13 +38,47 @@ export class ExcelController {
       }
 
       // Передаем буфер в сервис для обработки
-      const archiveBuffer = await this.excelTcService.excelTc(file.buffer);
+      const archiveBuffer = await this.excelService.excelTc(file.buffer);
 
       // Устанавливаем заголовки и отправляем архив в ответе
       res.setHeader('Content-Disposition', 'attachment; filename=archive.zip');
       res.setHeader('Content-Type', 'application/zip');
       res.send(archiveBuffer);
     } catch (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Post('partnerLeads')
+  @Roles('admin') // Укажите роль, которая имеет доступ
+  @IsActive() // Проверка активности пользователя
+  @UseGuards(JwtAuthGuard, ActiveGuard, RolesGuard) // Применение всех гвардов
+  async partnerLeads(
+    @Body() body: PartnerLeadsValidation,
+    @Res() res: Response,
+  ) {
+    try {
+      // Получаем буфер с Excel-файлом
+      const excelBuffer = await this.excelService.excelPartnerLeads(
+        body.partnerId,
+        body.startDate,
+        body.endDate,
+      );
+
+      // Устанавливаем заголовки для скачивания файла
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=partner_leads.xlsx',
+      );
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+
+      // Отправляем буфер как ответ
+      res.status(200).send(excelBuffer);
+    } catch (error) {
+      console.error('Error generating Excel:', error);
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

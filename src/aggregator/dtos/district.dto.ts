@@ -29,7 +29,6 @@ export class DistrictInfoDTO {
   })
   engname: string;
 }
-
 export class NoDistrictsDTO {
   @ApiProperty({
     description: 'Ответ ошибки',

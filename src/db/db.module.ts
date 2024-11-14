@@ -12,12 +12,16 @@ import { Street } from './entities/street.entity';
 import { Provider } from './entities/provider.entity';
 import { ProviderOnStreet } from './entities/provideronstreet.entity';
 import { TechologiesOnStreet } from './entities/techologiesonstreet.entity';
+import { ActiveDay } from './entities/active_day.entity';
+import { ScheduleUser } from './entities/schedule_user.entity';
 // repositories
 import { DistrictsRepository } from './repositories/districts.repository';
 import { LeadsRepository } from './repositories/leads.repository';
 import { ProvidersRepository } from './repositories/providers.repository';
 import { TariffsRepository } from './repositories/tariffs.repository';
 import { UsersRepository } from './repositories/users.repository';
+import { ScheduleUsersRepository } from './repositories/schedule_users.repository';
+import { ActiveDaysRepository } from './repositories/active_days.repository';
 
 @Module({
   imports: [
@@ -33,6 +37,8 @@ import { UsersRepository } from './repositories/users.repository';
       Provider,
       ProviderOnStreet,
       TechologiesOnStreet,
+      ActiveDay,
+      ScheduleUser,
     ]),
   ],
   providers: [
@@ -41,6 +47,8 @@ import { UsersRepository } from './repositories/users.repository';
     LeadsRepository,
     ProvidersRepository,
     TariffsRepository,
+    ScheduleUsersRepository,
+    ActiveDaysRepository,
   ],
   exports: [
     UsersRepository,
@@ -48,6 +56,8 @@ import { UsersRepository } from './repositories/users.repository';
     LeadsRepository,
     ProvidersRepository,
     TariffsRepository,
+    ScheduleUsersRepository,
+    ActiveDaysRepository,
   ],
 })
 export class DbModule {}

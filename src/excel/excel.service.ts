@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
+// nest
+import { Inject, HttpException, HttpStatus, Injectable } from '@nestjs/common';
+// service
 import * as xlsx from 'xlsx';
 import * as archiver from 'archiver';
-import * as crypto from 'crypto';
-import { Inject } from '@nestjs/common';
-import { HttpException, HttpStatus } from '@nestjs/common';
 import { DadataService } from '../dadata/dadata.service';
 import { AggregatorService } from '../aggregator/aggregator.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class ExcelService {
@@ -13,18 +13,15 @@ export class ExcelService {
     @Inject(AggregatorService)
     private readonly aggregatorService: AggregatorService,
     private readonly dadataService: DadataService,
+    private readonly emailService: EmailService,
   ) {}
 
-  private async hashAddres(address: string): Promise<string> {
-    return crypto.createHash('md5').update(address).digest('hex');
-  }
-
+  // Функции для получения excel файла с тех.возможностями
   private async delflat(address: string): Promise<string> {
     const arrAddress = address.split(',');
     arrAddress.pop();
     return arrAddress.join(',').trim();
   }
-
   private async addHousing(address: string): Promise<string> {
     const arrAddress = address.split(',');
     let lastElement = arrAddress[arrAddress.length - 1];
@@ -37,7 +34,6 @@ export class ExcelService {
 
     return arrAddress.join(',');
   }
-
   async excelTc(fileBuffer: Buffer): Promise<Buffer> {
     const inputExcel = xlsx.read(fileBuffer, { type: 'buffer' });
     const sheet = inputExcel.Sheets[inputExcel.SheetNames[0]];
@@ -179,5 +175,51 @@ export class ExcelService {
 
     // Возвращаем буфер архива
     return Buffer.concat(archiveBuffers);
+  }
+  // Функции для получения excel файла с заявками от партнеров Avatell
+  async excelPartnerLeads(
+    partnerId?: number,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<Buffer> {
+    // Получаем данные о заявках
+    let leads = [];
+    if (partnerId == 1) {
+      leads = await this.emailService.getGdeluEmails(
+        'ready',
+        new Date(startDate),
+        new Date(endDate),
+      );
+    } else if (partnerId == 2) {
+      leads = await this.emailService.getISPEmails(
+        'ready',
+        new Date(startDate),
+        new Date(endDate),
+      );
+    }
+
+    // Создаем структуру данных с нужными заголовками
+    const formattedLeads = leads.map((lead) => ({
+      Дата: lead.date, // Дата
+      id: lead.id, // ID
+      Адрес: lead.address, // Адрес
+      Телефон: lead.phone, // Телефон
+      Комментарий: lead.comment, // Комментарий
+      ФИО: lead.name, // Имя
+    }));
+
+    // Создаем рабочую книгу
+    const ws = xlsx.utils.json_to_sheet(formattedLeads, {
+      header: ['Дата', 'id', 'Адрес', 'Телефон', 'Комментарий', 'ФИО'],
+    });
+
+    // Создаем рабочую книгу в формате xlsx
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, 'Leads');
+
+    // Создаем буфер с файлом Excel
+    const buffer = xlsx.write(wb, { bookType: 'xlsx', type: 'buffer' });
+
+    return buffer;
   }
 }
