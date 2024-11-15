@@ -60,4 +60,4 @@ import { ActiveDaysRepository } from './repositories/active_days.repository';
     ActiveDaysRepository,
   ],
 })
-export class DbModule {}
+export class DbModule1 {}

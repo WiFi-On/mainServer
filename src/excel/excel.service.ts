@@ -206,11 +206,12 @@ export class ExcelService {
       Телефон: lead.phone, // Телефон
       Комментарий: lead.comment, // Комментарий
       ФИО: lead.name, // Имя
+      Почта: lead.email,
     }));
 
     // Создаем рабочую книгу
     const ws = xlsx.utils.json_to_sheet(formattedLeads, {
-      header: ['Дата', 'id', 'Адрес', 'Телефон', 'Комментарий', 'ФИО'],
+      header: ['Дата', 'id', 'Адрес', 'Телефон', 'Комментарий', 'ФИО', 'Почта'],
     });
 
     // Создаем рабочую книгу в формате xlsx

@@ -5,6 +5,7 @@ export interface emailOutput {
   id: string;
   comment: string;
   date?: Date;
+  email?: string;
 }
 export interface parsEmail {
   id: number;

@@ -11,10 +11,10 @@ import { EmailService } from 'src/email/email.service';
 import { ExcelController } from './excel.controller';
 // module
 import { AggregatorModule } from 'src/aggregator/aggregator.module';
-import { DbModule } from 'src/db/db.module';
+import { DbModule1 } from 'src/db1/db.module';
 
 @Module({
-  imports: [ConfigModule, AggregatorModule, HttpModule, DbModule],
+  imports: [ConfigModule, AggregatorModule, HttpModule, DbModule1],
   controllers: [ExcelController],
   providers: [ExcelService, AggregatorService, DadataService, EmailService],
   exports: [ExcelService],

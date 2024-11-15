@@ -109,6 +109,7 @@ export class EmailService {
         const parsedBodyToText = await this.parseBodyToText(email.body);
         const parsedISP = await this.parseBodyEmailISP(parsedBodyToText);
         parsedISP.date = email.date;
+        parsedISP.email = email.from;
         return parsedISP;
       }),
     );
@@ -117,6 +118,7 @@ export class EmailService {
       emailsISP.map(async (email) => {
         const parsedISP = await this.parseBodyEmailISP(email.body);
         parsedISP.date = email.date;
+        parsedISP.email = email.from;
         return parsedISP;
       }),
     );
@@ -142,6 +144,7 @@ export class EmailService {
         const decode = await this.decoderBase64(email.body);
         const parsedGDELU = await this.parseBodyEmailGDELU(decode);
         parsedGDELU.date = email.date;
+        parsedGDELU.email = email.from;
         return parsedGDELU;
       }),
     );

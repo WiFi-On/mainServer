@@ -8,26 +8,27 @@ import { ExcelModule } from './excel/excel.module';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { PartnerModule } from './partner/partner.module';
-import { DbModule } from './db/db.module';
+import { DbModule1 } from './db1/db.module';
 import { DadataModule } from './dadata/dadata.module';
 import { BitrixModule } from './bitrix/bitrix.module';
 import { ScheduleModule } from './schedule/schedule.module';
+import { EissdModule } from './eissd/eissd.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
-      type: process.env.DB_TYPE as 'postgres',
-      host: process.env.DB_HOST,
-      port: parseInt(process.env.DB_PORT, 10),
-      username: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_DATABASE,
+      type: process.env.DB_TYPE1 as 'postgres',
+      host: process.env.DB_HOST1,
+      port: parseInt(process.env.DB_PORT1, 10),
+      username: process.env.DB_USERNAME1,
+      password: process.env.DB_PASSWORD1,
+      database: process.env.DB_DATABASE1,
       synchronize: false,
       logging: ['error'],
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
     }),
-    DbModule,
+    DbModule1,
     AggregatorModule,
     ExcelModule,
     UserModule,
@@ -36,6 +37,7 @@ import { ScheduleModule } from './schedule/schedule.module';
     DadataModule,
     BitrixModule,
     ScheduleModule,
+    EissdModule,
   ],
   providers: [],
 })

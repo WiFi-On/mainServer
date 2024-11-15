@@ -14,7 +14,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuthController } from './auth.controller';
 // module
 import { DadataModule } from 'src/dadata/dadata.module';
-import { DbModule } from 'src/db/db.module';
+import { DbModule1 } from 'src/db1/db.module';
 import { UserModule } from '../user/user.module';
 
 // src/auth/auth.module.ts
@@ -23,7 +23,7 @@ import { UserModule } from '../user/user.module';
     UserModule,
     DadataModule,
     PassportModule,
-    DbModule,
+    DbModule1,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

@@ -1,7 +1,7 @@
 import { Body, Controller, Post, NotFoundException } from '@nestjs/common';
 import { ScheduleService } from './schedule.service';
-import { ScheduleUser } from 'src/db/entities/schedule_user.entity';
-import { ActiveDay } from 'src/db/entities/active_day.entity';
+import { ScheduleUser } from 'src/db1/entities/schedule_user.entity';
+import { ActiveDay } from 'src/db1/entities/active_day.entity';
 import { AddActiveDayValidation } from './validations/active_days.validation';
 
 @Controller('api/v1/schedule')

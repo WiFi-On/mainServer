@@ -3,10 +3,10 @@ import { ScheduleController } from './schedule.controller';
 import { ScheduleService } from './schedule.service';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
-import { DbModule } from 'src/db/db.module';
+import { DbModule1 } from 'src/db1/db.module';
 
 @Module({
-  imports: [ConfigModule, HttpModule, DbModule],
+  imports: [ConfigModule, HttpModule, DbModule1],
   controllers: [ScheduleController],
   providers: [ScheduleService],
   exports: [ScheduleService],

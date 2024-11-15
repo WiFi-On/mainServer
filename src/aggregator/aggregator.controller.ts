@@ -11,8 +11,8 @@ import { Request } from 'express';
 // Services
 import { AggregatorService } from './aggregator.service';
 // Entities
-import { Tariff } from '../db/entities/tariff.entity';
-import { Provider } from '../db/entities/provider.entity';
+import { Tariff } from '../db1/entities/tariff.entity';
+import { Provider } from '../db1/entities/provider.entity';
 // Validations
 import {
   GetTariffValidation,

@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
-import { ScheduleUsersRepository } from '../db/repositories/schedule_users.repository';
-import { ActiveDaysRepository } from '../db/repositories/active_days.repository';
+import { ScheduleUsersRepository } from '../db1/repositories/schedule_users.repository';
+import { ActiveDaysRepository } from '../db1/repositories/active_days.repository';
 
-import { ScheduleUser } from '../db/entities/schedule_user.entity';
+import { ScheduleUser } from '../db1/entities/schedule_user.entity';
 
 @Injectable()
 export class ScheduleService {

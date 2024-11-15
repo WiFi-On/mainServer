@@ -9,10 +9,10 @@ import { UserService } from 'src/user/user.service';
 
 import { UserModule } from '../user/user.module';
 import { DadataModule } from 'src/dadata/dadata.module';
-import { DbModule } from 'src/db/db.module'; // Импортируйте ваш DbModule
+import { DbModule1 } from 'src/db1/db.module'; // Импортируйте ваш DbModule
 
 @Module({
-  imports: [ConfigModule, HttpModule, UserModule, DadataModule, DbModule],
+  imports: [ConfigModule, HttpModule, UserModule, DadataModule, DbModule1],
   controllers: [AggregatorController],
   providers: [AggregatorService, DadataService, UserService],
   exports: [AggregatorService],

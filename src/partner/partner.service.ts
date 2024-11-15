@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
-import { LeadsRepository } from '../db/repositories/leads.repository';
-import { Lead } from '../db/entities/lead.entity';
+import { LeadsRepository } from '../db1/repositories/leads.repository';
+import { Lead } from '../db1/entities/lead.entity';
 import { BitrixService } from 'src/bitrix/bitrix.service';
 import { ReturnInfoLead } from './interfaces/services/InfoLead.interface';
 import { BitrixReturnData } from '../bitrix/interfaces/BitrixReturnData.interface';

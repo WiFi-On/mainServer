@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
-import { Tariff } from '../db/entities/tariff.entity';
-import { Provider } from '../db/entities/provider.entity';
-import { District } from '../db/entities/district.entity';
+import { Tariff } from '../db1/entities/tariff.entity';
+import { Provider } from '../db1/entities/provider.entity';
+import { District } from '../db1/entities/district.entity';
 
 import { ReturnTHVrtkType } from './models/returnDataService.models';
 
@@ -13,9 +13,9 @@ import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 
-import { TariffsRepository } from '../db/repositories/tariffs.repository';
-import { ProvidersRepository } from '../db/repositories/providers.repository';
-import { DistrictsRepository } from '../db/repositories/districts.repository';
+import { TariffsRepository } from '../db1/repositories/tariffs.repository';
+import { ProvidersRepository } from '../db1/repositories/providers.repository';
+import { DistrictsRepository } from '../db1/repositories/districts.repository';
 
 @Injectable()
 export class AggregatorService {
