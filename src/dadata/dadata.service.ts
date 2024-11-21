@@ -5,6 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
+import { AddressResponseDadataI } from './interfaces';
+
 @Injectable()
 export class DadataService {
   constructor(
@@ -12,10 +14,9 @@ export class DadataService {
     private readonly httpService: HttpService,
   ) {}
 
-  async addressCheck(address: string): Promise<any> {
+  async addressCheck(address: string): Promise<AddressResponseDadataI | null> {
     const apiKey = this.configService.get<string>('DADATA_KEY');
-    const url =
-      'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address';
+    const url = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address';
     const headers = {
       Authorization: `Token ${apiKey}`,
       'Content-Type': 'application/json',
@@ -23,27 +24,26 @@ export class DadataService {
     };
 
     try {
-      const response = await firstValueFrom(
-        this.httpService.post(url, { query: address }, { headers }),
-      );
+      // Делаем запрос к Dadata API
+      const response = await firstValueFrom(this.httpService.post(url, { query: address }, { headers }));
 
-      const data = response.data;
+      const data: AddressResponseDadataI = response.data;
 
+      // Проверяем, есть ли предложения
       if (!data.suggestions || data.suggestions.length === 0) {
-        return false;
+        return null;
       }
 
-      return data.suggestions[0].value;
+      return data;
     } catch (error) {
       console.error('Ошибка при проверке адреса:', error);
-      return false;
+      return null;
     }
   }
 
   async getDistrictFiasIDonIP(ip: string): Promise<string> {
     const apiKey = this.configService.get<string>('DADATA_KEY');
-    const url =
-      'http://suggestions.dadata.ru/suggestions/api/4_1/rs/iplocate/address';
+    const url = 'http://suggestions.dadata.ru/suggestions/api/4_1/rs/iplocate/address';
 
     const headers = {
       Authorization: `Token ${apiKey}`,
@@ -53,9 +53,7 @@ export class DadataService {
       ip: ip,
     };
     try {
-      const response = await firstValueFrom(
-        this.httpService.post(url, body, { headers }),
-      );
+      const response = await firstValueFrom(this.httpService.post(url, body, { headers }));
 
       const data = response.data;
       const districtId = data.location.fias_id;

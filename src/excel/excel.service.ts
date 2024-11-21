@@ -40,10 +40,7 @@ export class ExcelService {
     const rangeRef = sheet['!ref'];
 
     if (!rangeRef) {
-      throw new HttpException(
-        'Не удалось получить диапазон из листа Excel.',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new HttpException('Не удалось получить диапазон из листа Excel.', HttpStatus.BAD_REQUEST);
     }
 
     const range = xlsx.utils.decode_range(rangeRef);
@@ -83,15 +80,15 @@ export class ExcelService {
     numbers = numbers.slice(1);
 
     for (let i = 0; i < addresses.length; i++) {
-      const value = await this.dadataService.addressCheck(addresses[i]);
+      const resultDadata = await this.dadataService.addressCheck(addresses[i]);
+      const valueAddress = resultDadata.suggestions[0].value;
 
-      if (!value) {
+      if (!valueAddress) {
         TC.push('Dadata не нашла');
         continue;
       }
 
-      const providers =
-        await this.aggregatorService.getProvidersOnAddressByAddress(value);
+      const providers = await this.aggregatorService.getProvidersOnAddressByAddress(valueAddress);
       if (!providers || providers.length === 0) {
         TC.push('Провайдеров нет');
       } else {
@@ -109,17 +106,13 @@ export class ExcelService {
     };
 
     // Данные для записи в файлы
-    const worksheetData = [
-      ['Адрес', 'Номер', 'Техническая возможность(Провайдеры)'],
-    ];
+    const worksheetData = [['Адрес', 'Номер', 'Техническая возможность(Провайдеры)']];
     const worksheetDataMts = [['Номер']];
     const worksheetDataMegafon = [['Номер']];
     const worksheetDataRusCom = [['Номер']];
     const worksheetDataTTK = [['Номер']];
     const worksheetDataAlmatel = [['Номер']];
-    const worksheetDataNoCN = [
-      ['Адрес', 'Номер', 'Техническая возможность(Провайдеры)'],
-    ];
+    const worksheetDataNoCN = [['Адрес', 'Номер', 'Техническая возможность(Провайдеры)']];
 
     // Заполнение данных для каждой категории провайдеров
     for (let i = 0; i < addresses.length; i++) {
@@ -177,25 +170,13 @@ export class ExcelService {
     return Buffer.concat(archiveBuffers);
   }
   // Функции для получения excel файла с заявками от партнеров Avatell
-  async excelPartnerLeads(
-    partnerId?: number,
-    startDate?: string,
-    endDate?: string,
-  ): Promise<Buffer> {
+  async excelPartnerLeads(partnerId?: number, startDate?: string, endDate?: string): Promise<Buffer> {
     // Получаем данные о заявках
     let leads = [];
     if (partnerId == 1) {
-      leads = await this.emailService.getGdeluEmails(
-        'ready',
-        new Date(startDate),
-        new Date(endDate),
-      );
+      leads = await this.emailService.getGdeluEmails('ready', new Date(startDate), new Date(endDate));
     } else if (partnerId == 2) {
-      leads = await this.emailService.getISPEmails(
-        'ready',
-        new Date(startDate),
-        new Date(endDate),
-      );
+      leads = await this.emailService.getISPEmails('ready', new Date(startDate), new Date(endDate));
     }
 
     // Создаем структуру данных с нужными заголовками

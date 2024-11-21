@@ -4,8 +4,6 @@ import { Repository } from 'typeorm';
 
 import { Provider } from '../entities/provider.entity';
 import { ProviderOnStreet } from '../entities/provideronstreet.entity';
-import { Tariff } from '../entities/tariff.entity';
-import { District } from '../entities/district.entity';
 
 @Injectable()
 export class ProvidersRepository {
@@ -14,10 +12,6 @@ export class ProvidersRepository {
     private readonly providerRepository: Repository<Provider>,
     @InjectRepository(ProviderOnStreet)
     private readonly providerOnStreetRepository: Repository<ProviderOnStreet>,
-    @InjectRepository(Tariff)
-    private readonly tariffRepository: Repository<Tariff>,
-    @InjectRepository(District)
-    private readonly districtRepository: Repository<District>,
   ) {}
 
   // Функция для получения тарифа по id
@@ -33,9 +27,7 @@ export class ProvidersRepository {
     }
   }
 
-  async getProvidersByHashAddress(
-    hashAddress: string,
-  ): Promise<ProviderOnStreet[] | null> {
+  async getProvidersByHashAddress(hashAddress: string): Promise<ProviderOnStreet[] | null> {
     try {
       const providerOnStreet = await this.providerOnStreetRepository.find({
         where: { street_id: hashAddress },
@@ -49,9 +41,7 @@ export class ProvidersRepository {
     }
   }
 
-  async getProvidersByDistrictEngName(
-    districtEngName: string,
-  ): Promise<Provider[]> {
+  async getProvidersByDistrictEngName(districtEngName: string): Promise<Provider[]> {
     const providers = await this.providerRepository
       .createQueryBuilder('provider')
       .leftJoin('provider.tariffs', 'tariff') // Join for the purpose of filtering

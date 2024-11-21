@@ -3,14 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tariff } from '../entities/tariff.entity';
 import { ProviderOnStreet } from '../entities/provideronstreet.entity';
+import { Street } from '../entities/street.entity';
 
 @Injectable()
 export class TariffsRepository {
   constructor(
     @InjectRepository(Tariff)
     private readonly tariffRepository: Repository<Tariff>,
-    @InjectRepository(ProviderOnStreet)
-    private readonly providerOnStreetRepository: Repository<ProviderOnStreet>,
   ) {}
 
   // Функция для получения тарифа по id
@@ -31,24 +30,14 @@ export class TariffsRepository {
     return await this.tariffRepository
       .createQueryBuilder('t')
       .innerJoinAndSelect('t.district', 'd')
-      .innerJoinAndSelect(
-        ProviderOnStreet,
-        'ps',
-        'ps.provider_id = t.provider_id',
-      )
-      .innerJoinAndSelect(
-        'Street',
-        's',
-        's.id = ps.street_id AND s.district_id = d.id',
-      )
+      .innerJoinAndSelect(ProviderOnStreet, 'ps', 'ps.provider_id = t.provider_id')
+      .innerJoinAndSelect(Street, 's', 's.id = ps.street_id AND s.district_id = d.id')
       .innerJoinAndSelect('t.provider', 'p') // Add this line to join and select provider
       .where('s.id = :streetId', { streetId })
       .getMany();
   }
 
-  async getTariffsByDistrictEngName(
-    districtEngName: string,
-  ): Promise<Tariff[]> {
+  async getTariffsByDistrictEngName(districtEngName: string): Promise<Tariff[]> {
     try {
       const tariffs = await this.tariffRepository.find({
         where: {
@@ -86,11 +75,7 @@ export class TariffsRepository {
     }
   }
 
-  async getTariffsByDistrictIdAndProviderId(
-    districtId: string,
-    providerId: number,
-  ): Promise<Tariff[]> {
-    console.log(districtId, providerId);
+  async getTariffsByDistrictIdAndProviderId(districtId: string, providerId: number): Promise<Tariff[]> {
     try {
       const tariffs = await this.tariffRepository.find({
         where: {

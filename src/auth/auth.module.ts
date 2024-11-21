@@ -14,7 +14,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuthController } from './auth.controller';
 // module
 import { DadataModule } from 'src/dadata/dadata.module';
-import { DbModule1 } from 'src/db1/db.module';
+import { DbModule1 } from 'src/db1/db1.module';
 import { UserModule } from '../user/user.module';
 
 // src/auth/auth.module.ts
@@ -32,13 +32,7 @@ import { UserModule } from '../user/user.module';
       inject: [ConfigService],
     }),
   ],
-  providers: [
-    AuthService,
-    LocalStrategy,
-    JwtStrategy,
-    ConfigService,
-    UserService,
-  ],
+  providers: [AuthService, LocalStrategy, JwtStrategy, ConfigService, UserService],
   controllers: [AuthController],
   exports: [AuthService],
 })

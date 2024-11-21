@@ -86,11 +86,7 @@ export class UsersRepository {
   }
 
   // Функция для обновления токена пользователя
-  async updateTimeToken(
-    id: number,
-    token: string,
-    token_lifetime: Date,
-  ): Promise<void> {
+  async updateTimeToken(id: number, token: string, token_lifetime: Date): Promise<void> {
     try {
       await this.userRepository.update({ id }, { token, token_lifetime });
     } catch (error) {

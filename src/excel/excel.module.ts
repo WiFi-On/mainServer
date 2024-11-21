@@ -11,7 +11,7 @@ import { EmailService } from 'src/email/email.service';
 import { ExcelController } from './excel.controller';
 // module
 import { AggregatorModule } from 'src/aggregator/aggregator.module';
-import { DbModule1 } from 'src/db1/db.module';
+import { DbModule1 } from 'src/db1/db1.module';
 
 @Module({
   imports: [ConfigModule, AggregatorModule, HttpModule, DbModule1],

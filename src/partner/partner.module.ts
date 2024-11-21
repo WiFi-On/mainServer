@@ -7,7 +7,7 @@ import { Partner } from '../db1/entities/partner.entity';
 
 import { PartnerController } from './partner.controller';
 
-import { DbModule1 } from 'src/db1/db.module';
+import { DbModule1 } from 'src/db1/db1.module';
 import { BitrixModule } from 'src/bitrix/bitrix.module';
 
 @Module({

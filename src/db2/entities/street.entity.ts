@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryColumn } from 'typeorm';
 
-@Entity('districts')
-export class District {
+@Entity('streets')
+export class Street {
   @PrimaryColumn()
   id: number;
 
@@ -15,5 +15,5 @@ export class District {
   object: string;
 
   @Column()
-  parent_id: number;
+  district_id: number;
 }
