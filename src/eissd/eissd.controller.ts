@@ -45,4 +45,28 @@ export class EissdController {
   async testAuth() {
     return this.EissdService.authEissd();
   }
+  @Get('testTHV')
+  async testTHV() {
+    return this.EissdService.checkTHV('Широтная 105 кв. 1');
+  }
+  @Get('testOrgId')
+  async testOrgId() {
+    return this.EissdService.getOrgId('02');
+  }
+  @Get('testSHPD')
+  async testSHPD() {
+    return this.EissdService.getSHPDtariff('', '', '', '', '', '');
+  }
+  @Get('testIPTV')
+  async testIPTV() {
+    return this.EissdService.getIPTVtariff();
+  }
+  @Get('testSIM')
+  async testSIM() {
+    return this.EissdService.getSIMtariff('72');
+  }
+  @Get('testSendAplication')
+  async testSendAplication() {
+    return this.EissdService.sendAplication('', '', '', '', [], '', '');
+  }
 }

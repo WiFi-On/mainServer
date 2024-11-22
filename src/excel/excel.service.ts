@@ -81,12 +81,11 @@ export class ExcelService {
 
     for (let i = 0; i < addresses.length; i++) {
       const resultDadata = await this.dadataService.addressCheck(addresses[i]);
-      const valueAddress = resultDadata.suggestions[0].value;
-
-      if (!valueAddress) {
+      if (!resultDadata) {
         TC.push('Dadata не нашла');
         continue;
       }
+      const valueAddress = resultDadata.suggestions[0].value;
 
       const providers = await this.aggregatorService.getProvidersOnAddressByAddress(valueAddress);
       if (!providers || providers.length === 0) {

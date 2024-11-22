@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { AxiosResponse } from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import { firstValueFrom } from 'rxjs';
 import { DadataService } from 'src/dadata/dadata.service';
 import { DistrictRepository } from 'src/db2/repositories/districts.repository';
@@ -12,6 +12,7 @@ import { ResultThvEissdI } from 'src/eissd/interfaces';
 import * as https from 'https';
 import * as fs from 'fs';
 import { xml2js } from 'xml-js';
+import { URLSearchParams } from 'url';
 
 @Injectable()
 export class EissdService {
@@ -27,16 +28,12 @@ export class EissdService {
     this.pathCertProduct = this.configService.get<string>('EISSD_CERT_PRODUCT');
     this.pathKeyDev = this.configService.get<string>('EISSD_KEY_DEV');
     this.pathCertDev = this.configService.get<string>('EISSD_CERT_DEV');
-    this.eissdURLprod = this.configService.get<string>('EISSD_URL_PROD');
-    this.eissdURLdev = this.configService.get<string>('EISSD_URL_DEV');
   }
 
   private readonly pathKeyProduct: string;
   private readonly pathCertProduct: string;
   private readonly pathKeyDev: string;
   private readonly pathCertDev: string;
-  private readonly eissdURLprod: string;
-  private readonly eissdURLdev: string;
 
   async authEissd(): Promise<string> {
     const url = 'https://eissd.rt.ru/mod/auth/ajax/authentication/login';
@@ -170,9 +167,295 @@ export class EissdService {
       return {
         result: result,
         districtFiasId: districtFiasId,
+        localIds: {
+          regionId: regionId,
+          cityId: idDistrict.toString(),
+          streetId: idStreet.toString(),
+          houseId: idHouse.toString(),
+          flat: infoAddressDadata.flat,
+        },
       };
     } catch (error) {
       throw new Error(error);
+    }
+  }
+
+  async getSHPDtariff(
+    regionId: string,
+    cityId: string,
+    streetId: string,
+    houseId: string,
+    flat: string,
+    techName: string,
+  ): Promise<any> {
+    const endpoint = 'https://eissd.rt.ru/mpz/ajax/get_mrf_tariffs_list';
+    const SESSION_ID = 'ZTAWPTSJ6QDQ3QOT9VN4GFDVE88509GLYVJRC3YUO6NPVC3B0UXVBR6E1J2Q2855';
+    const techId = {
+      'БШПД (WBA)': '10063',
+      PSTN: '10044',
+      PON: '10037',
+      FTTx: '10036',
+      xDSL: '10035',
+    };
+
+    try {
+      // Данные запроса
+      const requestData = new URLSearchParams({
+        region: regionId,
+        cityId: cityId,
+        streetId: streetId,
+        houseId: houseId,
+        flat: flat,
+        isNew: 'false',
+        channelId: '68',
+        technology: techId[techName],
+        svcClassIds: '1',
+      });
+
+      // Отправка POST-запроса
+      const response = await axios.post(endpoint, requestData.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          Cookie: `SESSION_ID=${SESSION_ID}`, // Передаём SESSION_ID в Cookie
+        },
+      });
+
+      return response.data.result[0]; // Возвращаем данные ответа
+    } catch (error) {
+      console.error('Ошибка при выполнении запроса:', error);
+      throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
+    }
+  }
+
+  async getIPTVtariff(): Promise<any> {
+    const endpoint = 'https://eissd.rt.ru/mpz/ajax/get_mrf_tariffs_list';
+    const SESSION_ID = 'ZTAWPTSJ6QDQ3QOT9VN4GFDVE88509GLYVJRC3YUO6NPVC3B0UXVBR6E1J2Q2855';
+    const techId = {
+      'БШПД (WBA)': '10063',
+      PSTN: '10044',
+      PON: '10037',
+      FTTx: '10036',
+      xDSL: '10035',
+    };
+
+    try {
+      // Данные запроса
+      const requestData = new URLSearchParams({
+        region: '72',
+        cityId: '',
+        streetId: '',
+        houseId: '',
+        house: '',
+        flat: '',
+        isNew: 'false',
+        channelId: '68',
+        technology: techId.PON,
+        svcClassIds: '2',
+      });
+
+      // Отправка POST-запроса
+      const response = await axios.post(endpoint, requestData.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          Cookie: `SESSION_ID=${SESSION_ID}`, // Передаём SESSION_ID в Cookie
+        },
+      });
+
+      return response.data.result[0]; // Возвращаем данные ответа
+    } catch (error) {
+      console.error('Ошибка при выполнении запроса:', error);
+      throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
+    }
+  }
+
+  async getSIMtariff(region: string): Promise<any> {
+    const endpoint = 'https://eissd.rt.ru/ajax/mvno/get.tp.list';
+    const SESSION_ID = 'ZTAWPTSJ6QDQ3QOT9VN4GFDVE88509GLYVJRC3YUO6NPVC3B0UXVBR6E1J2Q2855';
+    const mvnoRegions = {
+      '02': '14',
+      '43': '38',
+      '12': '49',
+      '13': '50',
+      '52': '55',
+      '56': '59',
+      '58': '61',
+      '63': '66',
+      '64': '68',
+      '16': '76',
+      '18': '81',
+      '73': '82',
+      '21': '86',
+      '28': '11',
+      '79': '23',
+      '41': '34',
+      '49': '48',
+      '25': '62',
+      '14': '69',
+      '65': '70',
+      '27': '83',
+      '87': '87',
+      '50': '52',
+      '20': '85',
+      '26': '73',
+      '15': '71',
+      '61': '64',
+      '23': '43',
+      '09': '35',
+      '08': '32',
+      '07': '30',
+      '06': '27',
+      '05': '22',
+      '34': '19',
+      '30': '13',
+      '01': '08',
+      '76': '89',
+      '71': '79',
+      '69': '77',
+      '68': '75',
+      '67': '72',
+      '62': '65',
+      '57': '60',
+      '48': '47',
+      '46': '45',
+      '44': '42',
+      '40': '33',
+      '37': '26',
+      '36': '21',
+      '33': '18',
+      '32': '16',
+      '31': '15',
+      '89': '04',
+      '74': '07',
+      '86': '06',
+      '72': '05',
+      '66': '01',
+      '59': '03',
+      '45': '02',
+      '19': '84',
+      '17': '80',
+      '70': '78',
+      '55': '58',
+      '54': '57',
+      '24': '44',
+      '42': '37',
+      '38': '28',
+      '75': '24',
+      '03': '17',
+      '22': '10',
+      '04': '09',
+      '78': '67',
+      '60': '63',
+      '53': '56',
+      '51': '53',
+      '47': '46',
+      '11': '39',
+      '10': '36',
+      '35': '20',
+      '29': '12',
+    };
+
+    try {
+      // Данные запроса
+      const requestData = new URLSearchParams({
+        orgId: '2001455',
+        isPhys: 'true',
+        mvnoRegion: mvnoRegions[region],
+      });
+
+      // Отправка POST-запроса
+      const response = await axios.post(endpoint, requestData.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          Cookie: `SESSION_ID=${SESSION_ID}`, // Передаём SESSION_ID в Cookie
+        },
+      });
+      const result = response.data.result;
+
+      for (let i = 0; i < result.length; i++) {
+        if (result[i].show) {
+          return result[i];
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Ошибка при выполнении запроса:', error);
+      throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
+    }
+  }
+
+  async sendAplication(
+    name: string,
+    lastname: string,
+    phone: string,
+    channelId: string,
+    tariffs: any[],
+    orgId: any,
+    eissdInfo: any,
+  ): Promise<any> {
+    const endpoint = 'https://eissd.rt.ru/sales/api/ajax/save-order';
+    const SESSION_ID = 'ZTAWPTSJ6QDQ3QOT9VN4GFDVE88509GLYVJRC3YUO6NPVC3B0UXVBR6E1J2Q2855';
+
+    try {
+      // Данные запроса
+      const requestData = {
+        contactFirstName: name,
+        contactLastName: lastname,
+        contactPhone: phone,
+        channelId: channelId,
+        orgId: orgId,
+        regionId: eissdInfo['region'],
+        cityId: eissdInfo['idDistrict'],
+        city: eissdInfo['district'],
+        streetId: eissdInfo['idStreet'],
+        street: eissdInfo['street'],
+        house: eissdInfo['house'],
+        houseId: eissdInfo['idHouse'],
+        flat: eissdInfo['flat'],
+        clientLastName: lastname,
+        clientFirstName: name,
+        products: tariffs,
+        wishTimeStart: '10.04.2024 21:30:00',
+        wishTimeEnd: '10.04.2024 22:00:00',
+      };
+
+      // Отправка POST-запроса
+      const response = await axios.post(endpoint, requestData, {
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          Cookie: `SESSION_ID=${SESSION_ID}`, // Передаём SESSION_ID в Cookie
+        },
+      });
+
+      return response.data; // Возвращаем данные ответа
+    } catch (error) {
+      console.error('Ошибка при выполнении запроса:', error);
+      throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
+    }
+  }
+
+  async getOrgId(regionId: string): Promise<any> {
+    const endpoint = 'https://eissd.rt.ru/ajax/orgs/get.default.org.by.region';
+    const SESSION_ID = 'ZTAWPTSJ6QDQ3QOT9VN4GFDVE88509GLYVJRC3YUO6NPVC3B0UXVBR6E1J2Q2855';
+
+    try {
+      // Данные запроса
+      const requestData = new URLSearchParams({
+        regionId,
+      });
+
+      // Отправка POST-запроса
+      const response = await axios.post(endpoint, requestData.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          Cookie: `SESSION_ID=${SESSION_ID}`, // Передаём SESSION_ID в Cookie
+        },
+      });
+
+      return response.data; // Возвращаем данные ответа
+    } catch (error) {
+      console.error('Ошибка при выполнении запроса:', error);
+      throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
     }
   }
 
