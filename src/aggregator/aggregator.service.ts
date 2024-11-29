@@ -3,7 +3,7 @@ import { Tariff } from '../db1/entities/tariff.entity';
 import { Provider } from '../db1/entities/provider.entity';
 import { District } from '../db1/entities/district.entity';
 import { DadataService } from '../dadata/dadata.service';
-import { EissdService } from 'src/eissd/eissd.service';
+import { EissdService } from '../eissd/eissd.service';
 import * as crypto from 'crypto';
 import { TariffsRepository } from '../db1/repositories/tariffs.repository';
 import { ProvidersRepository } from '../db1/repositories/providers.repository';
@@ -148,10 +148,8 @@ export class AggregatorService {
     if (!checkTHV) {
       return false;
     }
-    // Проверка наличия Thv с условием
-    const hasThv = checkTHV.result.some((item) => item.Res === 'Y' || item.Res === 'U');
     // Проверка, получение, возвращение Тарифов с условием
-    if (hasThv) {
+    if (checkTHV.result) {
       return await this.tariffsRepository.getTariffsByDistrictIdAndProviderId(checkTHV.districtFiasId, 10);
     } else {
       return false;

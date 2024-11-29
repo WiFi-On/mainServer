@@ -4,14 +4,14 @@ import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
 // service
 import { ExcelService } from './excel.service';
-import { DadataService } from 'src/dadata/dadata.service';
-import { AggregatorService } from 'src/aggregator/aggregator.service';
-import { EmailService } from 'src/email/email.service';
+import { DadataService } from '../dadata/dadata.service';
+import { AggregatorService } from '../aggregator/aggregator.service';
+import { EmailService } from '../email/email.service';
 // controller
 import { ExcelController } from './excel.controller';
 // module
-import { AggregatorModule } from 'src/aggregator/aggregator.module';
-import { DbModule1 } from 'src/db1/db1.module';
+import { AggregatorModule } from '../aggregator/aggregator.module';
+import { DbModule1 } from '../db1/db1.module';
 
 @Module({
   imports: [ConfigModule, AggregatorModule, HttpModule, DbModule1],

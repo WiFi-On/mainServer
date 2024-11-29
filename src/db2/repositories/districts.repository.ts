@@ -11,11 +11,12 @@ export class DistrictRepository {
   ) {}
 
   // Получение id района по region и name
-  async getDistrictIDByRegionAndName(region: string, name: string): Promise<number | null> {
+  async getDistrictIDByRegionAndName(region: string, name: string, object: string): Promise<number | null> {
     const districtResult = await this.districtRepository.findOne({
       where: {
         region: region,
         name: name,
+        object: object,
       },
     });
 
@@ -24,22 +25,24 @@ export class DistrictRepository {
   }
 
   // Получение id района по parentID и name
-  async getDistrictIDByParentIDandName(parentID: number, name: string): Promise<number | null> {
+  async getDistrictIDByParentIDandName(parentID: number, name: string, object: string): Promise<number | null> {
     const districtResult = await this.districtRepository.findOne({
       where: {
         parent_id: parentID,
         name: name,
+        object: object,
       },
     });
     return districtResult ? districtResult.id : null;
   }
 
   // Получение id родительского района по region и name
-  async getParentIDByRegionAndName(region: string, name: string): Promise<number | null> {
+  async getParentIDByRegionAndName(region: string, name: string, object: string): Promise<number | null> {
     const districtResult = await this.districtRepository.findOne({
       where: {
         region: region,
         name: name,
+        object: object,
       },
     });
 
@@ -47,10 +50,11 @@ export class DistrictRepository {
   }
 
   // Получение id родительского района по districtID
-  async getParentIDByDistrictID(districtID: number): Promise<number | null> {
+  async getParentIDByDistrictID(districtID: number, object: string): Promise<number | null> {
     const districtResult = await this.districtRepository.findOne({
       where: {
         id: districtID,
+        object: object,
       },
     });
 

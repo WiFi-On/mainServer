@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { LeadsRepository } from '../db1/repositories/leads.repository';
 import { Lead } from '../db1/entities/lead.entity';
-import { BitrixService } from 'src/bitrix/bitrix.service';
+import { BitrixService } from '../bitrix/bitrix.service';
 import { ReturnInfoLead } from './interfaces/services/InfoLead.interface';
 import { BitrixReturnData } from '../bitrix/interfaces/BitrixReturnData.interface';
 
@@ -19,14 +19,7 @@ export class PartnerService {
     private readonly bitrixService: BitrixService,
   ) {}
 
-  async addLead(
-    idLead: number,
-    idPartner: number,
-    fio: string,
-    tel: string,
-    comment: string,
-    address: string,
-  ): Promise<ReturnInfoLead> {
+  async addLead(idLead: number, idPartner: number, fio: string, tel: string, comment: string, address: string): Promise<ReturnInfoLead> {
     if (!fio) {
       fio = 'Уточнить';
     }
@@ -58,44 +51,23 @@ export class PartnerService {
 
     let lead: Lead;
     try {
-      lead = await this.leadsRepository.addLead(
-        idLead,
-        idPartner,
-        fio,
-        tel,
-        comment,
-        address,
-      );
+      lead = await this.leadsRepository.addLead(idLead, idPartner, fio, tel, comment, address);
     } catch (error) {
       throw new Error(`Ошибка при добавлении лида: ${error.message}`);
     }
 
     let contact: BitrixReturnData;
     try {
-      contact = await this.bitrixService.createContact(
-        lead.fio,
-        '',
-        '',
-        lead.tel,
-        lead.address,
-      );
+      contact = await this.bitrixService.createContact(lead.fio, '', '', lead.tel, lead.address);
 
       result.idClientBitrix = contact.result;
     } catch (error) {
-      throw new Error(
-        `Ошибка при создании контакта в Bitrix: ${error.message}`,
-      );
+      throw new Error(`Ошибка при создании контакта в Bitrix: ${error.message}`);
     }
 
     let deal: BitrixReturnData;
     try {
-      deal = await this.bitrixService.createDeal(
-        contact.result,
-        this.idsBitrix[idPartner].id,
-        lead.address,
-        lead.comment,
-        idLead,
-      );
+      deal = await this.bitrixService.createDeal(contact.result, this.idsBitrix[idPartner].id, lead.address, lead.comment, idLead);
 
       result.idLeadBitrix = deal.result;
     } catch (error) {

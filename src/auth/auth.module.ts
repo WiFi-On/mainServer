@@ -6,15 +6,15 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 // service
 import { AuthService } from './auth.service';
-import { UserService } from 'src/user/user.service';
+import { UserService } from '../user/user.service';
 // strategy
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 // controller
 import { AuthController } from './auth.controller';
 // module
-import { DadataModule } from 'src/dadata/dadata.module';
-import { DbModule1 } from 'src/db1/db1.module';
+import { DadataModule } from '../dadata/dadata.module';
+import { DbModule1 } from '../db1/db1.module';
 import { UserModule } from '../user/user.module';
 
 // src/auth/auth.module.ts

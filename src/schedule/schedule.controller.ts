@@ -1,7 +1,7 @@
 import { Body, Controller, Post, NotFoundException } from '@nestjs/common';
 import { ScheduleService } from './schedule.service';
-import { ScheduleUser } from 'src/db1/entities/schedule_user.entity';
-import { ActiveDay } from 'src/db1/entities/active_day.entity';
+import { ScheduleUser } from '../db1/entities/schedule_user.entity';
+import { ActiveDay } from '../db1/entities/active_day.entity';
 import { AddActiveDayValidation } from './validations/active_days.validation';
 
 @Controller('api/v1/schedule')
@@ -24,13 +24,7 @@ export class ScheduleController {
 
   @Post('addActiveDay')
   async addActiveDay(@Body() body: AddActiveDayValidation): Promise<ActiveDay> {
-    const activeDay = await this.scheduleService.addActiveDay(
-      body.idWorker,
-      body.date,
-      body.startWorkTime,
-      body.endWorkTime,
-      body.office,
-    );
+    const activeDay = await this.scheduleService.addActiveDay(body.idWorker, body.date, body.startWorkTime, body.endWorkTime, body.office);
     if (!activeDay) {
       throw new NotFoundException('Рабочий день не создан');
     }

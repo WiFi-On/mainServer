@@ -10,14 +10,7 @@ export class LeadsRepository {
     private readonly leadsRepository: Repository<Lead>,
   ) {}
 
-  async addLead(
-    idLead: number,
-    idPartner: number,
-    fio: string,
-    tel: string,
-    comment: string,
-    address: string,
-  ): Promise<Lead> {
+  async addLead(idLead: number, idPartner: number, fio: string, tel: string, comment: string, address: string): Promise<Lead> {
     try {
       const lead = await this.leadsRepository.save({
         id: idLead,

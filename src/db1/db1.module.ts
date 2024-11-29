@@ -24,40 +24,8 @@ import { ScheduleUsersRepository } from './repositories/schedule_users.repositor
 import { ActiveDaysRepository } from './repositories/active_days.repository';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      User,
-      Role,
-      District,
-      Email,
-      Lead,
-      Partner,
-      Tariff,
-      Street,
-      Provider,
-      ProviderOnStreet,
-      TechologiesOnStreet,
-      ActiveDay,
-      ScheduleUser,
-    ]),
-  ],
-  providers: [
-    UsersRepository,
-    DistrictsRepository,
-    LeadsRepository,
-    ProvidersRepository,
-    TariffsRepository,
-    ScheduleUsersRepository,
-    ActiveDaysRepository,
-  ],
-  exports: [
-    UsersRepository,
-    DistrictsRepository,
-    LeadsRepository,
-    ProvidersRepository,
-    TariffsRepository,
-    ScheduleUsersRepository,
-    ActiveDaysRepository,
-  ],
+  imports: [TypeOrmModule.forFeature([User, Role, District, Email, Lead, Partner, Tariff, Street, Provider, ProviderOnStreet, TechologiesOnStreet, ActiveDay, ScheduleUser])],
+  providers: [UsersRepository, DistrictsRepository, LeadsRepository, ProvidersRepository, TariffsRepository, ScheduleUsersRepository, ActiveDaysRepository],
+  exports: [UsersRepository, DistrictsRepository, LeadsRepository, ProvidersRepository, TariffsRepository, ScheduleUsersRepository, ActiveDaysRepository],
 })
 export class DbModule1 {}

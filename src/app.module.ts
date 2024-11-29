@@ -15,9 +15,13 @@ import { DadataModule } from './dadata/dadata.module';
 import { BitrixModule } from './bitrix/bitrix.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { EissdModule } from './eissd/eissd.module';
+import { ScheduleModule as ScheduleModuleNest } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    // Модуль для интервального запуска задач
+    ScheduleModuleNest.forRoot(),
+
     // Загрузка конфигурации из файла .env
     ConfigModule.forRoot(),
 

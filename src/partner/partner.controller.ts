@@ -1,18 +1,10 @@
 // Nest
-import {
-  Controller,
-  Req,
-  Body,
-  Logger,
-  UseGuards,
-  Post,
-  NotFoundException,
-} from '@nestjs/common';
+import { Controller, Req, Body, Logger, UseGuards, Post, NotFoundException } from '@nestjs/common';
 import { AuthRequest } from '../auth/interfaces/request.interface';
 // Guards
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { ActiveGuard } from 'src/auth/guards/active.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ActiveGuard } from '../auth/guards/active.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/role.decorator';
 // Services
 import { PartnerService } from './partner.service';
@@ -28,10 +20,7 @@ export class PartnerController {
   @UseGuards(JwtAuthGuard, ActiveGuard, RolesGuard)
   @Roles('partnerAvatell')
   @Post('/add/lead')
-  async addLead(
-    @Body() body: AddLeadValidation,
-    @Req() request: AuthRequest,
-  ): Promise<ReturnDataLead> {
+  async addLead(@Body() body: AddLeadValidation, @Req() request: AuthRequest): Promise<ReturnDataLead> {
     const clientIp = request.ip || request.socket.remoteAddress;
     const requestPath = request.originalUrl; // Получаем полный путь запроса
     const startTime = Date.now(); // Запоминаем время начала выполнения
@@ -40,22 +29,13 @@ export class PartnerController {
       const { partner_id } = request.user; // Получаем id партнера из токена пользователя
 
       // Вызываем метод добавления лида в сервисе
-      const lead = await this.partnerService.addLead(
-        body.id,
-        partner_id,
-        body.fio,
-        body.tel,
-        body.comment,
-        body.address,
-      );
+      const lead = await this.partnerService.addLead(body.id, partner_id, body.fio, body.tel, body.comment, body.address);
 
       if (!lead) {
         const endTime = Date.now(); // Запоминаем время завершения выполнения
         const executionTime = endTime - startTime; // Вычисляем время выполнения
 
-        this.logger.error(
-          `Lead not created. IdPartner: ${partner_id} || IdLead: ${body.id} || IP: ${clientIp} || PATH: ${requestPath} || TIME: ${executionTime} мс`,
-        );
+        this.logger.error(`Lead not created. IdPartner: ${partner_id} || IdLead: ${body.id} || IP: ${clientIp} || PATH: ${requestPath} || TIME: ${executionTime} мс`);
         throw new NotFoundException(`Lead not created. ID: ${body.id}`);
       }
 
@@ -74,10 +54,7 @@ export class PartnerController {
       const endTime = Date.now(); // Запоминаем время завершения выполнения в случае ошибки
       const executionTime = endTime - startTime; // Вычисляем время выполнения
 
-      this.logger.error(
-        `Error during lead creation. IP: ${clientIp} || PATH: ${requestPath} || TIME: ${executionTime} мс`,
-        error.stack,
-      );
+      this.logger.error(`Error during lead creation. IP: ${clientIp} || PATH: ${requestPath} || TIME: ${executionTime} мс`, error.stack);
       throw error;
     }
   }

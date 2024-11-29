@@ -7,8 +7,8 @@ import { Partner } from '../db1/entities/partner.entity';
 
 import { PartnerController } from './partner.controller';
 
-import { DbModule1 } from 'src/db1/db1.module';
-import { BitrixModule } from 'src/bitrix/bitrix.module';
+import { DbModule1 } from '../db1/db1.module';
+import { BitrixModule } from '../bitrix/bitrix.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Lead, Partner]), DbModule1, BitrixModule],

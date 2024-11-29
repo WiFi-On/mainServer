@@ -51,14 +51,7 @@ export class UsersRepository {
     }
   }
   // Функция для создания пользователя
-  async createUser(
-    email: string,
-    hashPassword: string,
-    roleName: string,
-    token: string,
-    tokenLifetime: Date,
-    active = false,
-  ): Promise<User> {
+  async createUser(email: string, hashPassword: string, roleName: string, token: string, tokenLifetime: Date, active = false): Promise<User> {
     try {
       // Получаем роль по имени
       const role = await this.roleRepository.findOne({

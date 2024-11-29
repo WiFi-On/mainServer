@@ -26,17 +26,13 @@ export class EissdController {
     try {
       const endTime = Date.now(); // Запоминаем время завершения выполнения
       const executionTime = endTime - startTime; // Вычисляем время выполнения
-      this.logger.log(
-        `THV found. ADDRESS: ${query.address} || IP: ${clientIp} || PATH: ${requestPath} || TIME: ${executionTime} мс`,
-      );
+      this.logger.log(`THV found. ADDRESS: ${query.address} || IP: ${clientIp} || PATH: ${requestPath} || TIME: ${executionTime} мс`);
       const result = await this.EissdService.checkTHV(query.address);
       res.status(200).json(result);
     } catch (error) {
       const endTime = Date.now(); // Запоминаем время завершения выполнения
       const executionTime = endTime - startTime; // Вычисляем время выполнения
-      this.logger.error(
-        `THV not found. ADDRESS: ${query.address} || IP: ${clientIp} || PATH: ${requestPath} || TIME: ${executionTime} мс`,
-      );
+      this.logger.error(`THV not found. ADDRESS: ${query.address} || IP: ${clientIp} || PATH: ${requestPath} || TIME: ${executionTime} мс`);
       res.status(404).json({ message: error.message });
     }
   }
@@ -55,18 +51,30 @@ export class EissdController {
   }
   @Get('testSHPD')
   async testSHPD() {
-    return this.EissdService.getSHPDtariff('', '', '', '', '', '');
+    return this.EissdService.getSHPDtariff('19', '2230719', 'xDSL');
   }
   @Get('testIPTV')
   async testIPTV() {
-    return this.EissdService.getIPTVtariff();
+    return this.EissdService.getIPTVtariff('38', '2233206', 'xDSL');
+  }
+  @Get('testSHPDmrf')
+  async testSHPDmrf() {
+    return this.EissdService.getSHPDtariffMRF('72', '2983153', '3707742', '20400396', '1', 'PON');
+  }
+  @Get('testIPTVmrf')
+  async testIPTVmrf() {
+    return this.EissdService.getIPTVtariffMRF('', '', '', '', '', '');
   }
   @Get('testSIM')
   async testSIM() {
-    return this.EissdService.getSIMtariff('72');
+    return this.EissdService.getSIMtariff('38', '2004882', 'Иркутская область');
   }
-  @Get('testSendAplication')
-  async testSendAplication() {
-    return this.EissdService.sendAplication('', '', '', '', [], '', '');
+  // @Get('testSendAplication')
+  // async testSendAplication() {
+  //   return this.EissdService.sendAplication('', '', '', [], '', );
+  // }
+  @Get('testMain')
+  async testMain() {
+    return this.EissdService.main();
   }
 }
