@@ -1,8 +1,8 @@
 // nest
-import { Injectable, Inject, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { Cron } from '@nestjs/schedule';
+// import { Cron } from '@nestjs/schedule';
 // node
 import axios, { AxiosResponse } from 'axios';
 import { firstValueFrom } from 'rxjs';
@@ -19,7 +19,7 @@ import { ResultThvEissdI } from '../eissd/interfaces';
 import { BitrixService } from '../bitrix/bitrix.service';
 
 @Injectable()
-export class EissdService implements OnModuleInit {
+export class EissdService {
   private readonly logger = new Logger(EissdService.name);
   private readonly pathKeyProduct: string;
   private readonly pathCertProduct: string;
@@ -73,12 +73,11 @@ export class EissdService implements OnModuleInit {
     ];
   }
 
-  async onModuleInit() {
-    this.sessionId = await this.authEissd();
-    await this.main();
-  }
+  // async onModuleInit() {
+  //   this.sessionId = await this.authEissd();
+  //   await this.main();
+  // }
 
-  @Cron('*/5 * * * *')
   async main(): Promise<void> {
     // const testData = [
     //   // {
