@@ -14,7 +14,7 @@ export class BitrixService {
   private readonly methodCreateContact = 'crm.contact.add';
   private readonly methodCreateDeal = 'crm.deal.add';
   private readonly methodGetDeals = 'crm.deal.list';
-  private readonly moveStage = 'crm.deal.update';
+  private readonly dealUpdate = 'crm.deal.update';
   private readonly bitrixHook: string;
 
   constructor(
@@ -119,11 +119,12 @@ export class BitrixService {
     }
   }
 
-  async moveToAppointed(id_deal: string): Promise<BitrixReturnData> {
-    const url = `${this.bitrixHook}/${this.moveStage}`;
+  async moveToAppointed(id_deal: string, comment: string): Promise<BitrixReturnData> {
+    const url = `${this.bitrixHook}/${this.dealUpdate}`;
     const params = {
       ID: id_deal,
       'fields[STAGE_ID]': 'EXECUTING',
+      'fields[COMMENTS]': comment,
     };
     const fullUrl = `${url}?${querystring.stringify(params)}`;
 
@@ -140,11 +141,12 @@ export class BitrixService {
     }
   }
 
-  async moveToInStorage(id_deal: string): Promise<BitrixReturnData> {
-    const url = `${this.bitrixHook}/${this.moveStage}`;
+  async moveToInStorage(id_deal: string, comment: string): Promise<BitrixReturnData> {
+    const url = `${this.bitrixHook}/${this.dealUpdate}`;
     const params = {
       ID: id_deal,
       'fields[STAGE_ID]': 4,
+      'fields[COMMENTS]': comment,
     };
     const fullUrl = `${url}?${querystring.stringify(params)}`;
 
@@ -161,11 +163,12 @@ export class BitrixService {
     }
   }
 
-  async moveToError(id_deal: string): Promise<BitrixReturnData> {
-    const url = `${this.bitrixHook}/${this.moveStage}`;
+  async moveToError(id_deal: string, comment: string): Promise<BitrixReturnData> {
+    const url = `${this.bitrixHook}/${this.dealUpdate}`;
     const params = {
       ID: id_deal,
       'fields[STAGE_ID]': 'UC_F4OKAL',
+      'fields[COMMENTS]': comment,
     };
     const fullUrl = `${url}?${querystring.stringify(params)}`;
 

@@ -6,7 +6,6 @@ import { AggregatorController } from './aggregator.controller';
 import { AggregatorService } from './aggregator.service';
 import { DadataService } from '../dadata/dadata.service';
 import { UserService } from '../user/user.service';
-import { EissdService } from '../eissd/eissd.service';
 
 import { UserModule } from '../user/user.module';
 import { DadataModule } from '../dadata/dadata.module';
@@ -18,7 +17,7 @@ import { BitrixModule } from '../bitrix/bitrix.module';
 @Module({
   imports: [ConfigModule, HttpModule, UserModule, DadataModule, DbModule1, EissdModule, DbModule2, BitrixModule],
   controllers: [AggregatorController],
-  providers: [AggregatorService, DadataService, UserService, EissdService],
-  exports: [AggregatorService, EissdService],
+  providers: [AggregatorService, DadataService, UserService],
+  exports: [AggregatorService],
 })
 export class AggregatorModule {}

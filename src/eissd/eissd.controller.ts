@@ -1,5 +1,5 @@
 // Nest
-import { Controller, Get, Query, Req, Logger, Res } from '@nestjs/common';
+import { Controller, Get, Query, Req, Logger, Res, Post } from '@nestjs/common';
 import { Request, Response } from 'express';
 // Services
 import { EissdService } from './eissd.service';

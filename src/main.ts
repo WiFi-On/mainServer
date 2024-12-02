@@ -19,13 +19,17 @@ async function bootstrap() {
             }),
           ),
         }),
-        // Транспорт для файла
+        // Транспорт для файла общей информации
         new winston.transports.File({
           filename: 'logs/application.log',
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.json(),
-          ),
+          level: 'info',
+          format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+        }),
+        // Транспорт для файла с работай eissd
+        new winston.transports.File({
+          filename: 'logs/eissd.log',
+          level: 'eissd',
+          format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
         }),
       ],
     }),
@@ -51,9 +55,7 @@ async function bootstrap() {
   // Настройка Swagger
   const options = new DocumentBuilder()
     .setTitle('API для сайта on-wifi.ru + avatellpartner.ru')
-    .setDescription(
-      'В основном тут работа с on-wifi.ru. Есть одна ручка для получения заявок от партнеров для avatellpartner.ru.',
-    )
+    .setDescription('В основном тут работа с on-wifi.ru. Есть одна ручка для получения заявок от партнеров для avatellpartner.ru.')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
 import { Street } from '../entities/street.entity';
 
 @Injectable()
@@ -15,7 +15,7 @@ export class StreetRepository {
     const streetResult = await this.streetRepository.findOne({
       where: {
         district_id: district_id,
-        name: name,
+        name: ILike(name),
       },
     });
 

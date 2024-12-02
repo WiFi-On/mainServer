@@ -5,7 +5,6 @@ import { ConfigModule } from '@nestjs/config';
 // service
 import { ExcelService } from './excel.service';
 import { DadataService } from '../dadata/dadata.service';
-import { AggregatorService } from '../aggregator/aggregator.service';
 import { EmailService } from '../email/email.service';
 // controller
 import { ExcelController } from './excel.controller';
@@ -16,7 +15,7 @@ import { DbModule1 } from '../db1/db1.module';
 @Module({
   imports: [ConfigModule, AggregatorModule, HttpModule, DbModule1],
   controllers: [ExcelController],
-  providers: [ExcelService, AggregatorService, DadataService, EmailService],
+  providers: [ExcelService, DadataService, EmailService],
   exports: [ExcelService],
 })
 export class ExcelModule {}

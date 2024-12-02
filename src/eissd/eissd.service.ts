@@ -1,8 +1,8 @@
 // nest
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Injectable, Inject, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-// import { Cron } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 // node
 import axios, { AxiosResponse } from 'axios';
 import { firstValueFrom } from 'rxjs';
@@ -19,7 +19,7 @@ import { ResultThvEissdI } from '../eissd/interfaces';
 import { BitrixService } from '../bitrix/bitrix.service';
 
 @Injectable()
-export class EissdService {
+export class EissdService implements OnModuleInit {
   private readonly logger = new Logger(EissdService.name);
   private readonly pathKeyProduct: string;
   private readonly pathCertProduct: string;
@@ -73,64 +73,79 @@ export class EissdService {
     ];
   }
 
-  // async onModuleInit() {
-  //   this.sessionId = await this.authEissd();
-  //   await this.main();
-  // }
+  async onModuleInit() {
+    this.sessionId = await this.authEissd();
+    await this.main();
+  }
 
+  @Cron('*/2 * * * *')
   async main(): Promise<void> {
     // const testData = [
     //   // {
-    //   //   address: 'обл. Тюменская, рп Боровский, ул. Мира, 25',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   // },
-    //   // {
-    //   //   address: 'край Алтайский, п. Верх‑Обский, ул. Пожарная, 18',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   // },
-    //   // {
-    //   //   address: 'Калининград г Улица: Каштановая аллея ул Дом: д. 166 Квартира: 13 кв.',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   // },
-    //   // {
-    //   //   address: 'край Пермский, д. Гамы, ул. Советская, 89, ',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   // },
-    //   // {
-    //   //   address: 'г. Екатеринбург, ул. Рябинина, 47 кв 600',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   // },
-    //   // {
-    //   //   address: 'г. Краснодар, пер. Угольный, 6, кв 17',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   // },
-    //   // {
-    //   //   address: 'г. Калининград, ул. Красная, 261 кв 3',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   // },
-    //   // {
-    //   //   address: 'г. Абакан, ул. Арбан, 4 кв 85',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
+    //   //   address: 'г. Новый Уренгой, ул. Таежная, 29А к 2 кв 406',
+    //   //   fio: 'Тесто Тесто Тесто',
+    //   //   number: '9111111112',
+    //   //   id: '123123',
     //   // },
     //   {
-    //     address: 'г Санкт-Петербург, ул Стародеревенская, д 19 к 1 кв 172',
+    //     address: 'г. Барнаул, ул. Балтийская, 49 кв 18',
     //     fio: 'Тест Тест Тест',
     //     number: '9111111111',
-    //     id: '175',
+    //     id: '123123',
     //   },
     //   // {
-    //   //   address: 'г. Краснодар, ул. им Васнецова, 39',
+    //   //   address: 'г Челябинск, ул Калмыкова, д 11, кв 28',
     //   //   fio: 'Тест Тест Тест',
     //   //   number: '9111111111',
-    //   //   id: '175',
+    //   //   id: '123123',
+    //   // },
+    //   // {
+    //   //   address: 'обл. Новосибирская, рп Кольцово, пр‑кт Никольский, 16 кв 391',
+    //   //   fio: 'Тест Тест Тест',
+    //   //   number: '9111111111',
+    //   //   id: '123123',
+    //   // },
+    //   // {
+    //   //   address: 'г. Таганрог, пер. 10‑й Мариупольский, 1',
+    //   //   fio: 'Тест Тест Тест',
+    //   //   number: '9111111111',
+    //   //   id: '123123',
+    //   // },
+    //   // {
+    //   //   address: 'г. Краснодар, ул. Тепличная, 24, кв 4',
+    //   //   fio: 'Тест Тест Тест',
+    //   //   number: '9111111111',
+    //   //   id: '123123',
+    //   // },
+    //   // {
+    //   //   address: 'г Екатеринбург, ул Ясная, д 36 к 1, кв 163',
+    //   //   fio: 'Тест Тест Тест',
+    //   //   number: '9111111111',
+    //   //   id: '123123',
+    //   // },
+    //   // {
+    //   //   address: 'г. Курган, ул. Промышленная, 31 кв 23',
+    //   //   fio: 'Тест Тест Тест',
+    //   //   number: '9111111111',
+    //   //   id: '123123',
+    //   // },
+    //   // {
+    //   //   address: 'г Калининград, ул Киевская, д 147, кв 4',
+    //   //   fio: 'Тест Тест Тест',
+    //   //   number: '9111111111',
+    //   //   id: '123123',
+    //   // },
+    //   // {
+    //   //   address: 'г Санкт-Петербург, ул Чирикова, д 5 кв 601',
+    //   //   fio: 'Тест Тест Тест',
+    //   //   number: '9111111111',
+    //   //   id: '123123',
+    //   // },
+    //   // {
+    //   //   address: 'Тюменская обл, Уватский р-н, поселок Туртас, ул Солнечная, д 1, кв 8',
+    //   //   fio: 'Тест Тест Тест',
+    //   //   number: '9111111111',
+    //   //   id: '123123',
     //   // },
     // ];
     const leadsBitrixRtk = await this.bitrixService.getDealsOnProviders(52);
@@ -144,14 +159,14 @@ export class EissdService {
         const thv = await this.checkTHV(lead.address);
         console.log(thv);
         if (!thv) {
-          this.logger.error(`Техническая возможность не найдена || ADDRESS: ${lead.address} || PATH: eissd/main`);
-          this.bitrixService.moveToError(lead.id);
+          this.logger.error(`Техническая возможность не найдена || ADDRESS: ${lead.address} ||  PATH: eissd/main || STATUS: nothv`);
+          this.bitrixService.moveToError(lead.id, 'Адрес не найден');
           continue;
         }
         const orgId = await this.getOrgId(thv.infoAddress.regionId);
         if (!orgId) {
-          this.logger.error(`Айди организации не найден || REGION: ${thv.infoAddress.regionId} || PATH: eissd/main`);
-          this.bitrixService.moveToError(lead.id);
+          this.logger.error(`Айди организации не найден || REGION: ${thv.infoAddress.regionId} || PATH: eissd/main| | STATUS: noorgid`);
+          this.bitrixService.moveToError(lead.id, 'Айди организации не найден');
           continue;
         }
         // Получение тарифов
@@ -178,36 +193,55 @@ export class EissdService {
           iptv = await this.getIPTVtariff(thv.infoAddress.regionId, thv.infoAddress.cityId, thv.result.TechId);
         }
         if (!shpd) {
-          this.logger.error(`Тариф SHPD не найден || REGION: ${thv.infoAddress.regionId} || PATH: eissd/main`);
-          this.bitrixService.moveToError(lead.id);
+          this.logger.error(`Тариф SHPD не найден || REGION: ${thv.infoAddress.regionId} || PATH: eissd/main || STATUS: noshpdtariff`);
+          this.bitrixService.moveToError(lead.id, 'Тариф SHPD не найден');
           continue;
         }
         if (!iptv) {
-          this.logger.error(`Тариф IPTV не найден || REGION: ${thv.infoAddress.regionId} || PATH: eissd/main`);
+          this.logger.error(`Тариф IPTV не найден || REGION: ${thv.infoAddress.regionId} || PATH: eissd/main || STATUS: noiptvtariff`);
+          this.bitrixService.moveToError(lead.id, 'Тариф IPTV не найден');
           continue;
         }
         const sim = await this.getSIMtariff(thv.infoAddress.regionId, orgId, thv.infoAddress.regionFullName);
         if (!sim) {
-          this.logger.error(`Тариф SIM не найден || REGION: ${thv.infoAddress.regionId} || PATH: eissd/main`);
-          this.bitrixService.moveToError(lead.id);
+          this.logger.error(`Тариф SIM не найден || REGION: ${thv.infoAddress.regionId} || PATH: eissd/main || STATUS: nosimtariff`);
+          this.bitrixService.moveToError(lead.id, 'Тариф SIM не найден');
           continue;
         }
-        const eissdApplication = await this.sendAplication(lead.fio.split(' ')[0], lead.fio.split(' ')[1], lead.number, [shpd, iptv, sim], orgId, thv);
+        console.log(await this.validatePhoneNumber(lead.number));
+
+        let name = '';
+        let surname = '';
+        if (!lead.fio) {
+          name = 'Уточнить';
+          surname = 'Уточнить';
+        } else {
+          name = lead.fio.split(' ')[0] ? lead.fio.split(' ')[0] : 'Уточнить';
+          surname = lead.fio.split(' ')[1] ? lead.fio.split(' ')[1] : 'Уточнить';
+        }
+
+        const phone = await this.validatePhoneNumber(lead.number);
+
+        const eissdApplication = await this.sendAplication(name, surname, phone, [shpd, iptv, sim], orgId, thv);
+
+        console.log(eissdApplication);
 
         if (Object.keys(eissdApplication).length > 2) {
-          this.logger.log(`Заявка отправлена || ADDRESS: ${lead.address} || PATH: eissd/main`);
-          if (thv.result.thv) {
-            this.bitrixService.moveToAppointed(lead.id);
+          if (thv.result.thv && thv.result.Res == 'Y') {
+            this.logger.log(`Заявка назначена || ID: ${eissdApplication.orderId} || ADDRESS: ${lead.address} || PATH: eissd/main || STATUS: leadready`);
+            this.bitrixService.moveToAppointed(lead.id, eissdApplication.orderId);
           } else {
-            this.bitrixService.moveToInStorage(lead.id);
+            this.logger.log(`Заявка на сохранении || ID: ${eissdApplication.orderId} || ADDRESS: ${lead.address} || PATH: eissd/main || STATUS: leadstorage`);
+            this.bitrixService.moveToInStorage(lead.id, eissdApplication.orderId);
           }
         } else {
-          this.logger.error(`Заявка не отправлена || ADDRESS: ${lead.address} || PATH: eissd/main`);
-          this.bitrixService.moveToError(lead.id);
+          this.logger.error(`Заявка не отправлена || ADDRESS: ${lead.address} || PATH: eissd/main || STATUS: leaderror`);
+          console.log(eissdApplication.errorText);
+          this.bitrixService.moveToError(lead.id, eissdApplication.errorText);
         }
       } catch (error) {
-        this.logger.error(`Error: ${error} || ADDRESS: ${lead.address} || PATH: eissd/main`);
-        this.bitrixService.moveToError(lead.id);
+        this.logger.error(`Error: ${error} || ADDRESS: ${lead.address} || PATH: eissd/main || STATUS: leaderror`);
+        this.bitrixService.moveToError(lead.id, error.toString());
       }
     }
   }
@@ -297,6 +331,8 @@ export class EissdService {
       districtFiasId = infoAddressDadata.city_fias_id;
       districtName = infoAddressDadata.city;
       districtObject = infoAddressDadata.city_type;
+    }
+    if (!idDistrict && infoAddressDadata.settlement) {
     }
     if (!idDistrict) {
       throw new Error('Ошибка в получении id населенного пункта');
@@ -847,7 +883,7 @@ export class EissdService {
         orgId: orgId,
         personnalAccount: '',
         regionId: eissdInfo.infoAddress.regionId,
-        requestContent: '',
+        requestContent: 'Техно выгоды. Интернет + ТВ  + СВЯЗЬ Продавец: ИП Кривошеин ЯП',
         requestNumber: '',
         workerId: '',
         wishDateCall: '',
@@ -994,5 +1030,22 @@ export class EissdService {
       console.error('Error parsing XML:', error);
       throw error; // Выбрасываем ошибку, если XML не удается распарсить
     }
+  }
+  async validatePhoneNumber(input: string): Promise<string | null> {
+    // Удаляем все пробелы, знаки `+`, `-`, `(`, `)` из номера
+    const cleaned = input.replace(/[+\-\s()]/g, '');
+
+    // Если номер начинается с 7 или 8 и имеет длину 11
+    if ((cleaned.startsWith('7') || cleaned.startsWith('8')) && cleaned.length === 11) {
+      return cleaned.slice(1); // Убираем первую цифру
+    }
+
+    // Если номер уже состоит из 10 цифр
+    if (cleaned.length === 10) {
+      return cleaned;
+    }
+
+    // Если номер не подходит по формату
+    return null;
   }
 }

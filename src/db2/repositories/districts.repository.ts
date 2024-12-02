@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { District } from '../entities/district.entity';
 
 @Injectable()
@@ -15,8 +15,8 @@ export class DistrictRepository {
     const districtResult = await this.districtRepository.findOne({
       where: {
         region: region,
-        name: name,
-        object: object,
+        name: ILike(name),
+        object: ILike(object),
       },
     });
 
@@ -29,8 +29,8 @@ export class DistrictRepository {
     const districtResult = await this.districtRepository.findOne({
       where: {
         parent_id: parentID,
-        name: name,
-        object: object,
+        name: ILike(name),
+        object: ILike(object),
       },
     });
     return districtResult ? districtResult.id : null;
@@ -41,8 +41,8 @@ export class DistrictRepository {
     const districtResult = await this.districtRepository.findOne({
       where: {
         region: region,
-        name: name,
-        object: object,
+        name: ILike(name),
+        object: ILike(object),
       },
     });
 
