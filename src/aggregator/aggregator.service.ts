@@ -145,11 +145,7 @@ export class AggregatorService {
   // Для работы с Ростелеком
   async getTarrifsRTKOnAddress(address: string): Promise<Tariff[] | false> {
     const checkTHV = await this.eissdService.checkTHV(address);
-    if (!checkTHV) {
-      return false;
-    }
-    // Проверка, получение, возвращение Тарифов с условием
-    if (checkTHV.result) {
+    if (checkTHV.result.thv) {
       return await this.tariffsRepository.getTariffsByDistrictIdAndProviderId(checkTHV.districtFiasId, 10);
     } else {
       return false;

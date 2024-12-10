@@ -11,9 +11,10 @@ import { ExcelController } from './excel.controller';
 // module
 import { AggregatorModule } from '../aggregator/aggregator.module';
 import { DbModule1 } from '../db1/db1.module';
+import { EissdModule } from 'src/eissd/eissd.module';
 
 @Module({
-  imports: [ConfigModule, AggregatorModule, HttpModule, DbModule1],
+  imports: [ConfigModule, AggregatorModule, HttpModule, DbModule1, EissdModule],
   controllers: [ExcelController],
   providers: [ExcelService, DadataService, EmailService],
   exports: [ExcelService],

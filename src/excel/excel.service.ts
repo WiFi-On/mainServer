@@ -6,6 +6,7 @@ import * as archiver from 'archiver';
 import { DadataService } from '../dadata/dadata.service';
 import { AggregatorService } from '../aggregator/aggregator.service';
 import { EmailService } from '../email/email.service';
+import { EissdService } from '../eissd/eissd.service';
 
 @Injectable()
 export class ExcelService {
@@ -14,6 +15,7 @@ export class ExcelService {
     private readonly aggregatorService: AggregatorService,
     private readonly dadataService: DadataService,
     private readonly emailService: EmailService,
+    private readonly eissdService: EissdService,
   ) {}
 
   // Функции для получения excel файла с тех.возможностями
@@ -202,5 +204,45 @@ export class ExcelService {
     const buffer = xlsx.write(wb, { bookType: 'xlsx', type: 'buffer' });
 
     return buffer;
+  }
+  async excelSendLeadsEissd(fileBuffer: Buffer): Promise<Buffer> {
+    // Прочитать Excel-файл из буфера
+    const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
+
+    // Выбор первой страницы
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+
+    // Преобразование данных страницы в массив массивов
+    const data: string[][] = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+    // Удаляем заголовки, если они есть
+    data.shift();
+
+    // Обработка данных
+    for (let i = 0; i < data.length; i++) {
+      const number = data[i][0].toString();
+      const fio = data[i][1];
+      const address = data[i][2];
+      console.log(number, fio, address);
+      const result = await this.eissdService.formingApplication(address, number, fio);
+      console.log(result);
+
+      const excelResult = result.status + ' ' + result.result;
+      data[i].push(excelResult);
+    }
+
+    // Добавляем заголовки обратно (если они были)
+    const headers = ['Номер', 'ФИО', 'Адрес', 'Результат обработки'];
+    data.unshift(headers);
+
+    // Создаём новый лист Excel
+    const newSheet = xlsx.utils.aoa_to_sheet(data);
+    workbook.Sheets[sheetName] = newSheet;
+
+    // Преобразуем Workbook обратно в буфер
+    const outputBuffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    return outputBuffer;
   }
 }

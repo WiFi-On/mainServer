@@ -79,14 +79,18 @@ export class BitrixService {
     }
   }
 
-  async getDealsOnProviders(idProvider: number): Promise<BitrixReturnInfoData[]> {
+  async getDealsOnProviders(idProvider?: number): Promise<BitrixReturnInfoData[]> {
     // Ростелеком idBitrixProvider - 52
     const url = `${this.bitrixHook}/${this.methodGetDeals}`;
-    const params = {
-      'filter[UF_CRM_1697294773665]': idProvider,
+    const params: Record<string, any> = {
       'filter[STAGE_ID]': 'PREPAYMENT_INVOICE',
       'select[]': ['*', 'UF_*'],
     };
+
+    // Добавляем фильтр только если idProvider указан
+    if (idProvider) {
+      params['filter[UF_CRM_1697294773665]'] = idProvider;
+    }
 
     const fullUrl = `${url}?${querystring.stringify(params)}`;
 

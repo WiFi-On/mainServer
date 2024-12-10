@@ -148,101 +148,114 @@ export class EissdService implements OnModuleInit {
     //   //   id: '123123',
     //   // },
     // ];
-    const leadsBitrixRtk = await this.bitrixService.getDealsOnProviders(52);
+    const leadsBitrixRtk = await this.bitrixService.getDealsOnProviders();
     if (!leadsBitrixRtk.length) {
       this.logger.error(`Лидов нет || PATH: eissd/main`);
       return;
     }
     for (const lead of leadsBitrixRtk) {
-      try {
-        // Получение технической возможности и id организации.
-        const thv = await this.checkTHV(lead.address);
-        console.log(thv);
-        if (!thv) {
-          this.logger.error(`Техническая возможность не найдена || ADDRESS: ${lead.address} ||  PATH: eissd/main || STATUS: nothv`);
-          this.bitrixService.moveToError(lead.id, 'Адрес не найден');
-          continue;
-        }
-        const orgId = await this.getOrgId(thv.infoAddress.regionId);
-        if (!orgId) {
-          this.logger.error(`Айди организации не найден || REGION: ${thv.infoAddress.regionId} || PATH: eissd/main| | STATUS: noorgid`);
-          this.bitrixService.moveToError(lead.id, 'Айди организации не найден');
-          continue;
-        }
-        // Получение тарифов
-        let shpd: any, iptv: any;
-        if (this.mrfRegionList.includes(thv.infoAddress.regionId)) {
-          shpd = await this.getSHPDtariffMRF(
-            thv.infoAddress.regionId,
-            thv.infoAddress.cityId,
-            thv.infoAddress.streetId,
-            thv.infoAddress.houseId,
-            thv.infoAddress.flat,
-            thv.result.TechId,
-          );
-          iptv = await this.getIPTVtariffMRF(
-            thv.infoAddress.regionId,
-            thv.infoAddress.cityId,
-            thv.infoAddress.streetId,
-            thv.infoAddress.houseId,
-            thv.infoAddress.flat,
-            thv.result.TechId,
-          );
-        } else {
-          shpd = await this.getSHPDtariff(thv.infoAddress.regionId, thv.infoAddress.cityId, thv.result.TechId);
-          iptv = await this.getIPTVtariff(thv.infoAddress.regionId, thv.infoAddress.cityId, thv.result.TechId);
-        }
-        if (!shpd) {
-          this.logger.error(`Тариф SHPD не найден || REGION: ${thv.infoAddress.regionId} || PATH: eissd/main || STATUS: noshpdtariff`);
-          this.bitrixService.moveToError(lead.id, 'Тариф SHPD не найден');
-          continue;
-        }
-        if (!iptv) {
-          this.logger.error(`Тариф IPTV не найден || REGION: ${thv.infoAddress.regionId} || PATH: eissd/main || STATUS: noiptvtariff`);
-          this.bitrixService.moveToError(lead.id, 'Тариф IPTV не найден');
-          continue;
-        }
-        const sim = await this.getSIMtariff(thv.infoAddress.regionId, orgId, thv.infoAddress.regionFullName);
-        if (!sim) {
-          this.logger.error(`Тариф SIM не найден || REGION: ${thv.infoAddress.regionId} || PATH: eissd/main || STATUS: nosimtariff`);
-          this.bitrixService.moveToError(lead.id, 'Тариф SIM не найден');
-          continue;
-        }
-        console.log(await this.validatePhoneNumber(lead.number));
-
-        let name = '';
-        let surname = '';
-        if (!lead.fio) {
-          name = 'Уточнить';
-          surname = 'Уточнить';
-        } else {
-          name = lead.fio.split(' ')[0] ? lead.fio.split(' ')[0] : 'Уточнить';
-          surname = lead.fio.split(' ')[1] ? lead.fio.split(' ')[1] : 'Уточнить';
-        }
-
-        const phone = await this.validatePhoneNumber(lead.number);
-
-        const eissdApplication = await this.sendAplication(name, surname, phone, [shpd, iptv, sim], orgId, thv);
-
-        console.log(eissdApplication);
-
-        if (Object.keys(eissdApplication).length > 2) {
-          if (thv.result.thv && thv.result.Res == 'Y') {
-            this.logger.log(`Заявка назначена || ID: ${eissdApplication.orderId} || ADDRESS: ${lead.address} || PATH: eissd/main || STATUS: leadready`);
-            this.bitrixService.moveToAppointed(lead.id, eissdApplication.orderId);
-          } else {
-            this.logger.log(`Заявка на сохранении || ID: ${eissdApplication.orderId} || ADDRESS: ${lead.address} || PATH: eissd/main || STATUS: leadstorage`);
-            this.bitrixService.moveToInStorage(lead.id, eissdApplication.orderId);
-          }
-        } else {
-          this.logger.error(`Заявка не отправлена || ADDRESS: ${lead.address} || PATH: eissd/main || STATUS: leaderror`);
-          console.log(eissdApplication.errorText);
-          this.bitrixService.moveToError(lead.id, eissdApplication.errorText);
-        }
-      } catch (error) {
-        this.logger.error(`Error: ${error} || ADDRESS: ${lead.address} || PATH: eissd/main || STATUS: leaderror`);
-        this.bitrixService.moveToError(lead.id, error.toString());
+      const application = await this.formingApplication(lead.address, lead.number, lead.fio);
+      if (application.err) {
+        this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || ERROR: ${application.status}`);
+        this.bitrixService.moveToError(lead.id, application.status);
+        continue;
+      } else if (!application.err && application.status === 'Заявка на сохранении') {
+        this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || ERROR: ${application.status}`);
+        this.bitrixService.moveToInStorage(lead.id, application.status);
+      } else if (!application.err && application.status === 'Заявка назначена') {
+        this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || ERROR: ${application.status}`);
+        this.bitrixService.moveToAppointed(lead.id, application.status);
       }
+    }
+  }
+  async formingApplication(address: string, number: string, fio: string): Promise<{ err: boolean; status: string; result: string }> {
+    try {
+      const thv = await this.checkTHV(address);
+      thv.result.TechName = 'xDSL';
+      thv.result.Res = 'Y';
+      thv.result.TechId = '10035';
+
+      if (!thv) {
+        return { err: true, status: 'Адрес не найден', result: '' };
+      }
+      const orgId = await this.getOrgId(thv.infoAddress.regionId);
+      if (!orgId) {
+        return { err: true, status: 'Айди организации не найден', result: '' };
+      }
+      // Получение тарифов
+      let shpd: any, iptv: any;
+      if (this.mrfRegionList.includes(thv.infoAddress.regionId)) {
+        shpd = await this.getSHPDtariffMRF(
+          thv.infoAddress.regionId,
+          thv.infoAddress.cityId,
+          thv.infoAddress.streetId,
+          thv.infoAddress.houseId,
+          thv.infoAddress.flat,
+          thv.result.TechId,
+        );
+        iptv = await this.getIPTVtariffMRF(
+          thv.infoAddress.regionId,
+          thv.infoAddress.cityId,
+          thv.infoAddress.streetId,
+          thv.infoAddress.houseId,
+          thv.infoAddress.flat,
+          thv.result.TechId,
+        );
+      } else {
+        shpd = await this.getSHPDtariff(thv.infoAddress.regionId, thv.infoAddress.cityId, thv.result.TechId);
+        iptv = await this.getIPTVtariff(thv.infoAddress.regionId, thv.infoAddress.cityId, thv.result.TechId);
+      }
+      if (!shpd) {
+        return { err: true, status: 'Тариф SHPD не найден', result: '' };
+      }
+      if (!iptv) {
+        return { err: true, status: 'Тариф IPTV не найден', result: '' };
+      }
+      const sim = await this.getSIMtariff(thv.infoAddress.regionId, orgId, thv.infoAddress.regionFullName);
+      if (!sim) {
+        return { err: true, status: 'Тариф SIM не найден', result: '' };
+      }
+
+      let name = '';
+      let surname = '';
+      if (!fio) {
+        name = 'Уточнить';
+        surname = 'Уточнить';
+      } else {
+        name = fio.split(' ')[0] ? fio.split(' ')[0] : 'Уточнить';
+        surname = fio.split(' ')[1] ? fio.split(' ')[1] : 'Уточнить';
+      }
+
+      const phone = await this.validatePhoneNumber(number);
+      const eissdApplication = await this.sendAplication(name, surname, phone, [shpd, iptv, sim], orgId, thv);
+
+      if (Object.keys(eissdApplication).length > 2) {
+        if (thv.result.thv && thv.result.Res == 'Y') {
+          return {
+            err: false,
+            status: 'Заявка назначена',
+            result: eissdApplication.orderId,
+          };
+        } else {
+          return {
+            err: false,
+            status: 'Заявка на сохранении',
+            result: eissdApplication.orderId,
+          };
+        }
+      } else {
+        return {
+          err: true,
+          status: eissdApplication.errorText,
+          result: '',
+        };
+      }
+    } catch (error) {
+      return {
+        err: true,
+        status: error,
+        result: '',
+      };
     }
   }
   async authEissd(): Promise<string> {
@@ -417,8 +430,6 @@ export class EissdService implements OnModuleInit {
         regionId,
       });
 
-      console.log(this.sessionId);
-
       // Отправка POST-запроса
       const response = await axios.post(endpoint, requestData.toString(), {
         headers: {
@@ -575,7 +586,6 @@ export class EissdService implements OnModuleInit {
 
       const resultTariff = response.data.result.find((tariff: any) => !tariff.isPack && tariff.name.includes('Технологический'));
       const optionTariff = await this.getSHPDoptionsTariff(regionId, resultTariff.versionId, techId);
-      console.log(optionTariff);
       const result = {
         productTarId: resultTariff.versionId,
         productTypeRequest: 0,
@@ -622,7 +632,6 @@ export class EissdService implements OnModuleInit {
 
       const resultTariff = response.data.result.find((tariff: any) => !tariff.isPack && tariff.name.includes('Технологический'));
       const optionTariff = await this.getIPTVoptionsTariff(regionId, resultTariff.versionId);
-      console.log(optionTariff);
       const result = {
         productTarId: resultTariff.versionId,
         productTypeRequest: 0,
@@ -672,7 +681,6 @@ export class EissdService implements OnModuleInit {
         optionName: '',
       };
       const foundOption = Object.keys(response.data.result.options).find((key) => response.data.result.options[key].required);
-      console.log(foundOption, techId);
       if (foundOption) {
         const option = response.data.result.options[foundOption];
         result.optionName = option.label;
@@ -809,6 +817,8 @@ export class EissdService implements OnModuleInit {
       '21': 86,
       '26': 73,
       '28': 11,
+      '15': 71,
+      '09': 35,
     };
 
     try {
@@ -883,7 +893,7 @@ export class EissdService implements OnModuleInit {
         orgId: orgId,
         personnalAccount: '',
         regionId: eissdInfo.infoAddress.regionId,
-        requestContent: 'Техно выгоды. Интернет + ТВ  + СВЯЗЬ Продавец: ИП Кривошеин ЯП',
+        requestContent: 'Техно выгоды. Интернет + ТВ + СВЯЗЬ Продавец: ИП Кривошеин ЯП',
         requestNumber: '',
         workerId: '',
         wishDateCall: '',
@@ -1033,6 +1043,7 @@ export class EissdService implements OnModuleInit {
   }
   async validatePhoneNumber(input: string): Promise<string | null> {
     // Удаляем все пробелы, знаки `+`, `-`, `(`, `)` из номера
+    console.log(typeof input);
     const cleaned = input.replace(/[+\-\s()]/g, '');
 
     // Если номер начинается с 7 или 8 и имеет длину 11

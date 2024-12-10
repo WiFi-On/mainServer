@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Res,
-  HttpStatus,
-  HttpException,
-  UploadedFile,
-  UseInterceptors,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Body, Res, HttpStatus, HttpException, UploadedFile, UseInterceptors, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ExcelService } from './excel.service';
@@ -28,10 +18,7 @@ export class ExcelController {
   @IsActive() // Проверка активности пользователя
   @UseGuards(JwtAuthGuard, ActiveGuard, RolesGuard) // Применение всех гвардов
   @UseInterceptors(FileInterceptor('file')) // Используйте FileInterceptor для обработки загрузки
-  async uploadExcel(
-    @UploadedFile() file: Express.Multer.File,
-    @Res() res: Response,
-  ): Promise<void> {
+  async uploadExcel(@UploadedFile() file: Express.Multer.File, @Res() res: Response): Promise<void> {
     try {
       if (!file) {
         throw new HttpException('Файл не найден', HttpStatus.BAD_REQUEST);
@@ -49,31 +36,41 @@ export class ExcelController {
     }
   }
 
+  @Post('leadsEissd')
+  @Roles('admin')
+  @IsActive()
+  @UseGuards(JwtAuthGuard, ActiveGuard, RolesGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  async eissdLeads(@UploadedFile() file: Express.Multer.File, @Res() res: Response): Promise<void> {
+    try {
+      if (!file) {
+        throw new HttpException('Файл не найден', HttpStatus.BAD_REQUEST);
+      }
+
+      // Передаем буфер в сервис для обработки
+      const archiveBuffer = await this.excelService.excelSendLeadsEissd(file.buffer);
+
+      // Устанавливаем заголовки для скачивания файла
+      res.setHeader('Content-Disposition', 'attachment; filename=partner_leads.xlsx');
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(archiveBuffer);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
   @Post('partnerLeads')
   @Roles('admin') // Укажите роль, которая имеет доступ
   @IsActive() // Проверка активности пользователя
   @UseGuards(JwtAuthGuard, ActiveGuard, RolesGuard) // Применение всех гвардов
-  async partnerLeads(
-    @Body() body: PartnerLeadsValidation,
-    @Res() res: Response,
-  ) {
+  async partnerLeads(@Body() body: PartnerLeadsValidation, @Res() res: Response) {
     try {
       // Получаем буфер с Excel-файлом
-      const excelBuffer = await this.excelService.excelPartnerLeads(
-        body.partnerId,
-        body.startDate,
-        body.endDate,
-      );
+      const excelBuffer = await this.excelService.excelPartnerLeads(body.partnerId, body.startDate, body.endDate);
 
       // Устанавливаем заголовки для скачивания файла
-      res.setHeader(
-        'Content-Disposition',
-        'attachment; filename=partner_leads.xlsx',
-      );
-      res.setHeader(
-        'Content-Type',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      );
+      res.setHeader('Content-Disposition', 'attachment; filename=partner_leads.xlsx');
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
       // Отправляем буфер как ответ
       res.status(200).send(excelBuffer);
