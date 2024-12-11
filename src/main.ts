@@ -54,7 +54,7 @@ async function bootstrap() {
 
   // Настройка Swagger
   const options = new DocumentBuilder()
-    .setTitle('API для сайта on-wifi.ru + avatellpartner.ru')
+    .setTitle('Главный монолит on-wifi.ru + avatellpartner.ru')
     .setDescription('В основном тут работа с on-wifi.ru. Есть одна ручка для получения заявок от партнеров для avatellpartner.ru.')
     .setVersion('1.0')
     .addBearerAuth()

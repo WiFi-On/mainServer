@@ -155,16 +155,21 @@ export class EissdService implements OnModuleInit {
     }
     for (const lead of leadsBitrixRtk) {
       const application = await this.formingApplication(lead.address, lead.number, lead.fio);
-      if (application.err) {
+      if (lead.provider_id == '52') {
+        if (application.err) {
+          this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || ERROR: ${application.status} || RESULT: ${application.result}`);
+          this.bitrixService.moveToError(lead.id, application.status);
+          continue;
+        } else if (!application.err && application.status === 'Заявка на сохранении') {
+          this.logger.log(`ADDRESS: ${lead.address} ||  PATH: eissd/main || ERROR: ${application.status} || RESULT: ${application.result}`);
+          this.bitrixService.moveToInStorage(lead.id, application.status);
+        } else if (!application.err && application.status === 'Заявка назначена') {
+          this.logger.log(`ADDRESS: ${lead.address} ||  PATH: eissd/main || ERROR: ${application.status} || RESULT: ${application.result}`);
+          this.bitrixService.moveToAppointed(lead.id, application.status);
+        }
+      } else {
         this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || ERROR: ${application.status}`);
-        this.bitrixService.moveToError(lead.id, application.status);
-        continue;
-      } else if (!application.err && application.status === 'Заявка на сохранении') {
-        this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || ERROR: ${application.status}`);
-        this.bitrixService.moveToInStorage(lead.id, application.status);
-      } else if (!application.err && application.status === 'Заявка назначена') {
-        this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || ERROR: ${application.status}`);
-        this.bitrixService.moveToAppointed(lead.id, application.status);
+        this.bitrixService.editComment(lead.id, application.status + ' ' + application.result);
       }
     }
   }

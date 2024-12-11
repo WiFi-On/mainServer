@@ -115,6 +115,7 @@ export class BitrixService {
           number: resultResponse[i].UF_CRM_1697365970828,
           address: resultResponse[i].UF_CRM_1697646751446.split('|')[0],
           id: resultResponse[i].ID,
+          provider_id: resultResponse[i].UF_CRM_1697294773665,
         });
       }
       return result;
@@ -172,6 +173,27 @@ export class BitrixService {
     const params = {
       ID: id_deal,
       'fields[STAGE_ID]': 'UC_F4OKAL',
+      'fields[COMMENTS]': comment,
+    };
+    const fullUrl = `${url}?${querystring.stringify(params)}`;
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(fullUrl, {
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+      const resultResponse = response.data.result;
+      return resultResponse;
+    } catch (error) {
+      throw new HttpException(`Failed to fetch deals: ${error.message}`, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async editComment(id_deal: string, comment: string): Promise<void> {
+    const url = `${this.bitrixHook}/${this.dealUpdate}`;
+    const params = {
+      ID: id_deal,
       'fields[COMMENTS]': comment,
     };
     const fullUrl = `${url}?${querystring.stringify(params)}`;

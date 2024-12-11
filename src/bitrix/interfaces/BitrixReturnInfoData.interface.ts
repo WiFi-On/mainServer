@@ -3,4 +3,5 @@ export interface BitrixReturnInfoData {
   fio: string;
   number: string;
   id: string;
+  provider_id: string;
 }
