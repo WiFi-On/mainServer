@@ -4,4 +4,5 @@ export interface BitrixReturnInfoData {
   number: string;
   id: string;
   provider_id: string;
+  comment: string;
 }

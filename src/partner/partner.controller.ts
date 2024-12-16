@@ -11,12 +11,18 @@ import { PartnerService } from './partner.service';
 // DTOS
 import { AddLeadValidation } from './validations/leads.validations';
 import { ReturnDataLead } from './interfaces/controllers/ReturnDataLead.interface';
+import { ApiTags, ApiOperation, ApiOkResponse, ApiNotFoundResponse } from '@nestjs/swagger';
+import { LeadReadyDTO } from './dtos/lead.dto';
 
+@ApiTags('Partner')
 @Controller('api/v1/partner')
 export class PartnerController {
   private readonly logger = new Logger(PartnerController.name);
   constructor(private readonly partnerService: PartnerService) {}
 
+  @ApiOperation({ summary: 'Получение лидов от партнеров.' })
+  @ApiOkResponse({ description: 'Получение лидов от партнеров', type: LeadReadyDTO })
+  @ApiNotFoundResponse({ description: 'Файл не найден' })
   @UseGuards(JwtAuthGuard, ActiveGuard, RolesGuard)
   @Roles('partnerAvatell')
   @Post('/add/lead')

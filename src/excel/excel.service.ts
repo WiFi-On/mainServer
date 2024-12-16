@@ -153,10 +153,6 @@ export class ExcelService {
       archiveBuffers.push(chunk);
     });
 
-    archive.on('end', () => {
-      console.log('ZIP-архив завершен.');
-    });
-
     archive.append(buffers.output, { name: 'output.xlsx' });
     archive.append(buffers.outputMts, { name: 'outputMts.xlsx' });
     archive.append(buffers.outputMegafon, { name: 'outputMegafon.xlsx' });
@@ -224,12 +220,9 @@ export class ExcelService {
       const number = data[i][0].toString();
       const fio = data[i][1];
       const address = data[i][2];
-      console.log(number, fio, address);
       const result = await this.eissdService.formingApplication(address, number, fio);
-      console.log(result);
 
-      const excelResult = result.status + ' ' + result.result;
-      data[i].push(excelResult);
+      data[i].push(result.result);
     }
 
     // Добавляем заголовки обратно (если они были)

@@ -14,6 +14,18 @@ export class DadataService {
     private readonly httpService: HttpService,
   ) {}
 
+  /**
+   * Получение подробной информации об адресе из сервиса dadata по адресу.
+   *
+   * @param {string} [address=''] - Адрес.
+   * @returns {Promise<AddressResponseDadataI | null>} Объект с информацией об адресе или null, если адрес не найден. В объекте содержатся не все поля.
+   *
+   * @throws {HttpException} Выбрасывается в случае ошибки HTTP-запроса с описанием причины.
+   *
+   * @example
+   * const address = await dadataService.addressCheck('Москва, ул. Ленина 1 кв 1');
+   * console.log(address);
+   */
   async addressCheck(address: string): Promise<AddressResponseDadataI | null> {
     const apiKey = this.configService.get<string>('DADATA_KEY');
     const url = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address';
@@ -41,6 +53,18 @@ export class DadataService {
     }
   }
 
+  /**
+   * Получение подробной информации об адресе из сервиса dadata по ip. Используется для определения местоположение пользователя.
+   *
+   * @param {string} [ip=''] - ip.
+   * @returns {Promise<string>} Возвращает фиас айди населенного пункта или пустую строку.
+   *
+   * @throws {HttpException} Выбрасывается в случае ошибки HTTP-запроса с описанием причины.
+   *
+   * @example
+   * const fiasDistrictId = await dadataService.getDistrictFiasIDonIP('127.0.0.1');
+   * console.log(fiasDistrictId);
+   */
   async getDistrictFiasIDonIP(ip: string): Promise<string> {
     const apiKey = this.configService.get<string>('DADATA_KEY');
     const url = 'http://suggestions.dadata.ru/suggestions/api/4_1/rs/iplocate/address';

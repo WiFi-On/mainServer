@@ -23,8 +23,11 @@ import { UsersRepository } from './repositories/users.repository';
 import { ScheduleUsersRepository } from './repositories/schedule_users.repository';
 import { ActiveDaysRepository } from './repositories/active_days.repository';
 
+// Работа с первой базой. Тут все кроме работы с адреской eissd(Ростелеком).
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Role, District, Email, Lead, Partner, Tariff, Street, Provider, ProviderOnStreet, TechologiesOnStreet, ActiveDay, ScheduleUser])],
+  imports: [
+    TypeOrmModule.forFeature([User, Role, District, Email, Lead, Partner, Tariff, Street, Provider, ProviderOnStreet, TechologiesOnStreet, ActiveDay, ScheduleUser]),
+  ],
   providers: [UsersRepository, DistrictsRepository, LeadsRepository, ProvidersRepository, TariffsRepository, ScheduleUsersRepository, ActiveDaysRepository],
   exports: [UsersRepository, DistrictsRepository, LeadsRepository, ProvidersRepository, TariffsRepository, ScheduleUsersRepository, ActiveDaysRepository],
 })

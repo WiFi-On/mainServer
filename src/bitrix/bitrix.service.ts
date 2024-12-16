@@ -27,6 +27,22 @@ export class BitrixService {
     }
   }
 
+  /**
+   * Создает новый контакт в системе Bitrix24.
+   *
+   * @param {string} [name=''] - Имя контакта.
+   * @param {string} [secondName=''] - Отчество контакта.
+   * @param {string} [lastName=''] - Фамилия контакта.
+   * @param {string} [phone=''] - Номер телефона контакта.
+   * @param {string} [address=''] - Адрес контакта.
+   * @returns {Promise<BitrixReturnData>} Данные, возвращаемые системой Bitrix24 при успешном создании контакта.
+   *
+   * @throws {HttpException} Выбрасывается в случае ошибки HTTP-запроса с описанием причины.
+   *
+   * @example
+   * const contact = await createContact('Иван', 'Иванович', 'Петров', '+79998887766', 'Москва');
+   * console.log(contact);
+   */
   async createContact(name: string = '', secondName: string = '', lastName: string = '', phone: string = '', address: string = ''): Promise<BitrixReturnData> {
     const url = `${this.bitrixHook}/${this.methodCreateContact}`;
     const data: BitrixContactData = {
@@ -51,7 +67,22 @@ export class BitrixService {
       throw new HttpException(`Failed to create contact: ${error.message}`, HttpStatus.BAD_REQUEST);
     }
   }
-
+  /**
+   * Создает новую сделку в системе Bitrix24.
+   *
+   * @param {number} id_client - Идентификатор клиента.
+   * @param {number} id_distributor - Идентификатор дистрибьютора.
+   * @param {string} address - Адрес сделки.
+   * @param {string} comment - Комментарий к сделке.
+   * @param {number} id_lead - Идентификатор лида.
+   * @returns {Promise<BitrixReturnData>} Данные, возвращаемые системой Bitrix24 при успешном создании сделки.
+   *
+   * @throws {HttpException} Выбрасывается в случае ошибки HTTP-запроса с описанием причины.
+   *
+   * @example
+   * const deal = await createDeal(123, 456, 'Москва, ул. Ленина', 'Новый заказ', 789);
+   * console.log(deal);
+   */
   async createDeal(id_client: number, id_distributor: number, address: string, comment: string, id_lead: number): Promise<BitrixReturnData> {
     const url = `${this.bitrixHook}/${this.methodCreateDeal}`;
     const data: BitrixDealData = {
@@ -78,7 +109,18 @@ export class BitrixService {
       throw new HttpException(`Failed to create deal: ${error.message}`, HttpStatus.BAD_REQUEST);
     }
   }
-
+  /**
+   * Получает список сделок от указанного провайдера или всех провайдеров.
+   *
+   * @param {number} [idProvider] - Идентификатор провайдера (опционально). Если не указан, возвращаются сделки всех провайдеров.
+   * @returns {Promise<BitrixReturnInfoData[]>} Список сделок, включая информацию о клиенте, номере, адресе, провайдере и идентификаторе.
+   *
+   * @throws {HttpException} Если не удается получить данные или сделки не найдены.
+   *
+   * @example
+   * const deals = await getDealsOnProviders(52);
+   * console.log(deals);
+   */
   async getDealsOnProviders(idProvider?: number): Promise<BitrixReturnInfoData[]> {
     // Ростелеком idBitrixProvider - 52
     const url = `${this.bitrixHook}/${this.methodGetDeals}`;
@@ -116,6 +158,7 @@ export class BitrixService {
           address: resultResponse[i].UF_CRM_1697646751446.split('|')[0],
           id: resultResponse[i].ID,
           provider_id: resultResponse[i].UF_CRM_1697294773665,
+          comment: resultResponse[i].COMMENTS,
         });
       }
       return result;
@@ -123,7 +166,19 @@ export class BitrixService {
       return [];
     }
   }
-
+  /**
+   * Переводит сделку в статус "Назначено" с добавлением комментария.
+   *
+   * @param {string} id_deal - Идентификатор сделки.
+   * @param {string} comment - Комментарий для сделки.
+   * @returns {Promise<BitrixReturnData>} Результат обновления сделки.
+   *
+   * @throws {HttpException} Выбрасывается в случае ошибки HTTP-запроса с описанием причины.
+   *
+   * @example
+   * const result = await moveToAppointed('12345', 'Назначено ответственному');
+   * console.log(result);
+   */
   async moveToAppointed(id_deal: string, comment: string): Promise<BitrixReturnData> {
     const url = `${this.bitrixHook}/${this.dealUpdate}`;
     const params = {
@@ -145,7 +200,19 @@ export class BitrixService {
       throw new HttpException(`Failed to fetch deals: ${error.message}`, HttpStatus.BAD_REQUEST);
     }
   }
-
+  /**
+   * Переводит сделку в статус "На сохранении" с добавлением комментария.
+   *
+   * @param {string} id_deal - Идентификатор сделки.
+   * @param {string} comment - Комментарий для сделки.
+   * @returns {Promise<BitrixReturnData>} Результат обновления сделки.
+   *
+   * @throws {HttpException} Выбрасывается в случае ошибки HTTP-запроса с описанием причины.
+   *
+   * @example
+   * const result = await moveToInStorage('12345', 'Перемещено на склад');
+   * console.log(result);
+   */
   async moveToInStorage(id_deal: string, comment: string): Promise<BitrixReturnData> {
     const url = `${this.bitrixHook}/${this.dealUpdate}`;
     const params = {
@@ -167,7 +234,19 @@ export class BitrixService {
       throw new HttpException(`Failed to fetch deals: ${error.message}`, HttpStatus.BAD_REQUEST);
     }
   }
-
+  /**
+   * Переводит сделку в статус "Ошибка" с добавлением комментария.
+   *
+   * @param {string} id_deal - Идентификатор сделки.
+   * @param {string} comment - Комментарий для сделки.
+   * @returns {Promise<BitrixReturnData>} Результат обновления сделки.
+   *
+   * @throws {HttpException} Выбрасывается в случае ошибки HTTP-запроса с описанием причины.
+   *
+   * @example
+   * const result = await moveToError('12345', 'Ошибка при выполнении');
+   * console.log(result);
+   */
   async moveToError(id_deal: string, comment: string): Promise<BitrixReturnData> {
     const url = `${this.bitrixHook}/${this.dealUpdate}`;
     const params = {
@@ -189,7 +268,23 @@ export class BitrixService {
       throw new HttpException(`Failed to fetch deals: ${error.message}`, HttpStatus.BAD_REQUEST);
     }
   }
-
+  /**
+   * Редактирует комментарий к сделке в системе Bitrix24.
+   *
+   * @param {string} id_deal - Уникальный идентификатор сделки.
+   * @param {string} comment - Новый комментарий для обновления сделки.
+   * @returns {Promise<void>} Промис без возвращаемого значения (void).
+   *
+   * @throws {HttpException} Выбрасывается в случае ошибки HTTP-запроса с описанием причины.
+   *
+   * @example
+   * try {
+   *   await editComment('12345', 'Обновленный комментарий');
+   *   console.log('Комментарий обновлен');
+   * } catch (error) {
+   *   console.error(error.message);
+   * }
+   */
   async editComment(id_deal: string, comment: string): Promise<void> {
     const url = `${this.bitrixHook}/${this.dealUpdate}`;
     const params = {

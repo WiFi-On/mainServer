@@ -17,6 +17,10 @@ import { StreetRepository } from '../db2/repositories/streets.repository';
 import { HouseRepository } from '../db2/repositories/houses.repository';
 import { ResultThvEissdI } from '../eissd/interfaces';
 import { BitrixService } from '../bitrix/bitrix.service';
+import tariffMrfI from './interfaces/tariffMrf.interface';
+import tariffI from './interfaces/tariff.interface';
+import OptionI from './interfaces/option.interface';
+import tariffSimI from './interfaces/tariffSim.interface';
 
 @Injectable()
 export class EissdService implements OnModuleInit {
@@ -73,81 +77,24 @@ export class EissdService implements OnModuleInit {
     ];
   }
 
-  async onModuleInit() {
+  /**
+   * Функция запускается при инициализации модуля. Нужно для получения куки файла сессии, что бы в дальнейшем можно было использовать нужные ручки.
+   * @returns {Promise<void>}
+   */
+  async onModuleInit(): Promise<void> {
     this.sessionId = await this.authEissd();
     await this.main();
   }
 
+  /**
+   * Главная функция, которая запускается каждые 2 минуты для заведения заявок из колоник в bitrix.
+   * Если что это взаимодействие с api, которое доступно только внутри сайта eissd.
+   * Пришлоль брать ручки от туда и с ними творить чудеса, из за того что открытое апи для взаимодействия работает через жопу. И поддержка нулевая.
+   * Если придется что то улучшать, нужно будет заходить на сайт и через браузер взять нужные ручки.
+   * @returns {Promise<void>} Данные, возвращаемые системой Bitrix24 при успешном создании контакта.
+   */
   @Cron('*/2 * * * *')
   async main(): Promise<void> {
-    // const testData = [
-    //   // {
-    //   //   address: 'г. Новый Уренгой, ул. Таежная, 29А к 2 кв 406',
-    //   //   fio: 'Тесто Тесто Тесто',
-    //   //   number: '9111111112',
-    //   //   id: '123123',
-    //   // },
-    //   {
-    //     address: 'г. Барнаул, ул. Балтийская, 49 кв 18',
-    //     fio: 'Тест Тест Тест',
-    //     number: '9111111111',
-    //     id: '123123',
-    //   },
-    //   // {
-    //   //   address: 'г Челябинск, ул Калмыкова, д 11, кв 28',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   //   id: '123123',
-    //   // },
-    //   // {
-    //   //   address: 'обл. Новосибирская, рп Кольцово, пр‑кт Никольский, 16 кв 391',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   //   id: '123123',
-    //   // },
-    //   // {
-    //   //   address: 'г. Таганрог, пер. 10‑й Мариупольский, 1',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   //   id: '123123',
-    //   // },
-    //   // {
-    //   //   address: 'г. Краснодар, ул. Тепличная, 24, кв 4',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   //   id: '123123',
-    //   // },
-    //   // {
-    //   //   address: 'г Екатеринбург, ул Ясная, д 36 к 1, кв 163',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   //   id: '123123',
-    //   // },
-    //   // {
-    //   //   address: 'г. Курган, ул. Промышленная, 31 кв 23',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   //   id: '123123',
-    //   // },
-    //   // {
-    //   //   address: 'г Калининград, ул Киевская, д 147, кв 4',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   //   id: '123123',
-    //   // },
-    //   // {
-    //   //   address: 'г Санкт-Петербург, ул Чирикова, д 5 кв 601',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   //   id: '123123',
-    //   // },
-    //   // {
-    //   //   address: 'Тюменская обл, Уватский р-н, поселок Туртас, ул Солнечная, д 1, кв 8',
-    //   //   fio: 'Тест Тест Тест',
-    //   //   number: '9111111111',
-    //   //   id: '123123',
-    //   // },
-    // ];
     const leadsBitrixRtk = await this.bitrixService.getDealsOnProviders();
     if (!leadsBitrixRtk.length) {
       this.logger.error(`Лидов нет || PATH: eissd/main`);
@@ -157,23 +104,44 @@ export class EissdService implements OnModuleInit {
       const application = await this.formingApplication(lead.address, lead.number, lead.fio);
       if (lead.provider_id == '52') {
         if (application.err) {
-          this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || ERROR: ${application.status} || RESULT: ${application.result}`);
-          this.bitrixService.moveToError(lead.id, application.status);
+          this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
+          this.bitrixService.moveToError(lead.id, application.result);
           continue;
-        } else if (!application.err && application.status === 'Заявка на сохранении') {
-          this.logger.log(`ADDRESS: ${lead.address} ||  PATH: eissd/main || ERROR: ${application.status} || RESULT: ${application.result}`);
-          this.bitrixService.moveToInStorage(lead.id, application.status);
-        } else if (!application.err && application.status === 'Заявка назначена') {
-          this.logger.log(`ADDRESS: ${lead.address} ||  PATH: eissd/main || ERROR: ${application.status} || RESULT: ${application.result}`);
-          this.bitrixService.moveToAppointed(lead.id, application.status);
+        } else if (!application.err && application.result.includes('Заявка на сохранении')) {
+          this.logger.log(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
+          this.bitrixService.moveToInStorage(lead.id, application.result);
+        } else if (!application.err && application.result.includes('Заявка назначена')) {
+          this.logger.log(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
+          this.bitrixService.moveToAppointed(lead.id, application.result);
         }
-      } else {
-        this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || ERROR: ${application.status}`);
-        this.bitrixService.editComment(lead.id, application.status + ' ' + application.result);
+      } else if (!lead.comment) {
+        this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
+        this.bitrixService.editComment(lead.id, application.result);
       }
     }
   }
-  async formingApplication(address: string, number: string, fio: string): Promise<{ err: boolean; status: string; result: string }> {
+  /**
+   * Формируем полностью заявку и отправляем ее.
+   * 1) Получение технической возможности и информации по адресу. Техническая возможность - можно ли подключать клиента по адресу и по какой технологии.
+   * 2) Получение id организации, потому что для каждого региона своя организация.
+   * 3) Получение тарифа SHPD. SHPD - Интернет. У них на сайте 2 возможности получения таких тарифов. Для mrf регионов и для обычных регионов. Без понятия по каким принципам это работает, но мне все равно пришлось проверять каждый регион в ручную.
+   * this.mrfRegionList нужна для знания о мрф регионов.
+   * 4) По такому же принципу мы получаем IPTV. IPTV - телевидение.
+   * 5) Получение SIM. SIM - симка. Работает тоже странно. Для каждого региона, есть свой айди и если на каком то адресе не находит симку, то нужно просто добавить в объект mvnoRegions с этим айди.
+   * 6) Дальше создания объекта для заявки. Тут мы указываем раннее полученные данные и отправляем.
+   * 7) После получения информации о заведении, в зависимости от статуса мы распределяем по битриксу.
+   *
+   * Все обернуто в try-catch, потому что без понятия что можно произойти. Это непредсказуемая система без документации. Весь код написан через синяки.
+   *
+   * Заявка на сохранении. Обозначает что технической возможности нет, но мы ее завели.
+   * Заявка назначена. Обозначает что технической возможности есть и заявка завелась.
+   * Остальные варианты просто кидаются в колонку ошибка в битриксе.
+   * @param {string} [address=''] - Адрес для получения технической возможности по адресу.
+   * @param {string} [number=''] - Номер телефона.
+   * @param {string} [fio=''] - ФИО клиента.
+   * @returns {Promise<BitrixReturnData>} Данные, возвращаемые системой Bitrix24 при успешном создании контакта.
+   */
+  async formingApplication(address: string, number: string, fio: string): Promise<{ err: boolean; result: string }> {
     try {
       const thv = await this.checkTHV(address);
       thv.result.TechName = 'xDSL';
@@ -181,11 +149,11 @@ export class EissdService implements OnModuleInit {
       thv.result.TechId = '10035';
 
       if (!thv) {
-        return { err: true, status: 'Адрес не найден', result: '' };
+        return { err: true, result: 'Адрес не найден' };
       }
       const orgId = await this.getOrgId(thv.infoAddress.regionId);
       if (!orgId) {
-        return { err: true, status: 'Айди организации не найден', result: '' };
+        return { err: true, result: 'Айди организации не найден' };
       }
       // Получение тарифов
       let shpd: any, iptv: any;
@@ -211,14 +179,14 @@ export class EissdService implements OnModuleInit {
         iptv = await this.getIPTVtariff(thv.infoAddress.regionId, thv.infoAddress.cityId, thv.result.TechId);
       }
       if (!shpd) {
-        return { err: true, status: 'Тариф SHPD не найден', result: '' };
+        return { err: true, result: 'Тариф SHPD не найден' };
       }
       if (!iptv) {
-        return { err: true, status: 'Тариф IPTV не найден', result: '' };
+        return { err: true, result: 'Тариф IPTV не найден' };
       }
       const sim = await this.getSIMtariff(thv.infoAddress.regionId, orgId, thv.infoAddress.regionFullName);
       if (!sim) {
-        return { err: true, status: 'Тариф SIM не найден', result: '' };
+        return { err: true, result: 'Тариф SIM не найден' };
       }
 
       let name = '';
@@ -238,31 +206,28 @@ export class EissdService implements OnModuleInit {
         if (thv.result.thv && thv.result.Res == 'Y') {
           return {
             err: false,
-            status: 'Заявка назначена',
-            result: eissdApplication.orderId,
+            result: 'Заявка назначена' + ' || ' + eissdApplication.orderId,
           };
         } else {
           return {
             err: false,
-            status: 'Заявка на сохранении',
-            result: eissdApplication.orderId,
+            result: 'Заявка на сохранении' + ' || ' + eissdApplication.orderId,
           };
         }
       } else {
         return {
           err: true,
-          status: eissdApplication.errorText,
-          result: '',
+          result: eissdApplication.errorText,
         };
       }
     } catch (error) {
-      return {
-        err: true,
-        status: error,
-        result: '',
-      };
+      return { err: true, result: error.message };
     }
   }
+  /**
+   * Функция для получения куки для взаимодействия с ручками. Я как понял, нужно переавторизовываться раз в сутки.
+   * @returns {Promise<string>} Возращает куку для взяимодействия с ручкамиа.
+   */
   async authEissd(): Promise<string> {
     const url = 'https://eissd.rt.ru/mod/auth/ajax/authentication/login';
     const formData = new URLSearchParams();
@@ -288,6 +253,17 @@ export class EissdService implements OnModuleInit {
       throw error;
     }
   }
+  /**
+   * Функция для получения технической возможности и информации по адресу.
+   * Самая сложная и страшная функция. Потому что каждый как хочет так и дрочит с этими адресами, никто не предерживается одному формату данных.
+   *
+   * Ошибки которые могут возникнуть:
+   * - Dadata не понимает что за адрес
+   * - В Eissd нет такого адреса
+   * - в dadata и базе адрес есть, но записан чуть чуть по разному.(Самая распространенная ошибка)
+   * @param {string} [address=''] - Адрес который нужно проверить.
+   * @returns {Promise<ResultThvEissdIing>} Возвращает данные по технической возможности и информацию о адресе.
+   */
   async checkTHV(address: string): Promise<ResultThvEissdI> {
     const techId = {
       'БШПД (WBA)': '10063',
@@ -426,7 +402,13 @@ export class EissdService implements OnModuleInit {
       throw new Error(error);
     }
   }
-  async getOrgId(regionId: string): Promise<any> {
+  /**
+   * Функция для получения айди организации. Потому что для каждого региона своя организация.
+   *
+   * @param {string} [regionId=''] - регион. Пример - 01, 72, 50.
+   * @returns {Promise<string>} Возвращает айди организации.
+   */
+  async getOrgId(regionId: string): Promise<string> {
     const endpoint = 'https://eissd.rt.ru/ajax/orgs/get.default.org.by.region';
 
     try {
@@ -455,7 +437,18 @@ export class EissdService implements OnModuleInit {
     }
   }
   // Получение мрф тарифов
-  async getSHPDtariffMRF(regionId: string, cityId: string, streetId: string, houseId: string, flat: string, techId: string): Promise<any> {
+  /**
+   * Функция для получения SHPD тарифа для mrf регионов.
+   *
+   * @param {string} [regionId=''] - регион. Пример - 01, 72, 50.
+   * @param {string} [cityId=''] - локальный айди населенного пункта.
+   * @param {string} [streetId=''] - локальный айди улицы.
+   * @param {string} [houseId=''] - локальный айди дома.
+   * @param {string} [flat=''] - квартира.
+   * @param {string} [techId=''] - айди технологии подключения.
+   * @returns {Promise<tariffMrfI>} Возвращает айди организации.
+   */
+  async getSHPDtariffMRF(regionId: string, cityId: string, streetId: string, houseId: string, flat: string, techId: string): Promise<tariffMrfI> {
     const endpoint = 'https://eissd.rt.ru/mpz/ajax/get_mrf_tariffs_list';
 
     try {
@@ -497,7 +490,7 @@ export class EissdService implements OnModuleInit {
             paramValue: '1',
           },
         ],
-        productRegion: '72',
+        productRegion: regionId,
         productAsrTariffId: response.data.result[0].asrTariffId,
         productTariffName: response.data.result[0].title,
       };
@@ -508,7 +501,18 @@ export class EissdService implements OnModuleInit {
       throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
     }
   }
-  async getIPTVtariffMRF(regionId: string, cityId: string, streetId: string, houseId: string, flat: string, techId: string): Promise<any> {
+  /**
+   * Функция для получения IPTV тарифа для mrf регионов.
+   *
+   * @param {string} [regionId=''] - регион. Пример - 01, 72, 50.
+   * @param {string} [cityId=''] - локальный айди населенного пункта.
+   * @param {string} [streetId=''] - локальный айди улицы.
+   * @param {string} [houseId=''] - локальный айди дома.
+   * @param {string} [flat=''] - квартира.
+   * @param {string} [techId=''] - айди технологии подключения.
+   * @returns {Promise<tariffMrfI>} Возвращает
+   */
+  async getIPTVtariffMRF(regionId: string, cityId: string, streetId: string, houseId: string, flat: string, techId: string): Promise<tariffMrfI> {
     const endpoint = 'https://eissd.rt.ru/mpz/ajax/get_mrf_tariffs_list';
 
     try {
@@ -550,7 +554,7 @@ export class EissdService implements OnModuleInit {
             paramValue: '1',
           },
         ],
-        productRegion: '72',
+        productRegion: regionId,
         productAsrTariffId: response.data.result[0].asrTariffId,
         productTariffName: response.data.result[0].title,
       };
@@ -562,7 +566,15 @@ export class EissdService implements OnModuleInit {
     }
   }
   // Получение тарифов
-  async getSHPDtariff(regionId: string, districtId: string, techId: string): Promise<any> {
+  /**
+   * Функция для получения SHPD тарифа.
+   *
+   * @param {string} [regionId=''] - регион. Пример - 01, 72, 50.
+   * @param {string} [districtId=''] - локальный айди населенного пункта.
+   * @param {string} [techId=''] - айди технологии подключения.
+   * @returns {Promise<tariffI>} Возвращает айди организации.
+   */
+  async getSHPDtariff(regionId: string, districtId: string, techId: string): Promise<tariffI> {
     const endpoint = 'https://eissd.rt.ru/ajax/internet/get.tariff.list';
 
     try {
@@ -608,7 +620,15 @@ export class EissdService implements OnModuleInit {
       throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
     }
   }
-  async getIPTVtariff(regionId: string, districtId: string, techId: string): Promise<any> {
+  /**
+   * Функция для получения IPTV тарифа.
+   *
+   * @param {string} [regionId=''] - регион. Пример - 01, 72, 50.
+   * @param {string} [districtId=''] - локальный айди населенного пункта.
+   * @param {string} [techId=''] - айди технологии подключения.
+   * @returns {Promise<tariffI>} Возвращает айди организации.
+   */
+  async getIPTVtariff(regionId: string, districtId: string, techId: string): Promise<tariffI> {
     const endpoint = 'https://eissd.rt.ru/ajax/iptv/get.tariff.list';
 
     try {
@@ -655,7 +675,15 @@ export class EissdService implements OnModuleInit {
     }
   }
   // Получение опций для тарифа
-  async getSHPDoptionsTariff(regionId: string, tariffId: string, techId: string): Promise<any> {
+  /**
+   * Функция для получения опции для shpd тарифа. Есть тарифы, в которых обязательно должна быть опция. Допустим есть тариф: Технологический, но он включает в себя по умолчанию интернет.
+   *
+   * @param {string} [regionId=''] - регион. Пример - 01, 72, 50.
+   * @param {string} [tariffId=''] - айди тарифа.
+   * @param {string} [techId=''] - айди технологии подключения.
+   * @returns {Promise<OptionI>} Возвращает объект опции для тарифа.
+   */
+  async getSHPDoptionsTariff(regionId: string, tariffId: string, techId: string): Promise<OptionI> {
     const endpoint = 'https://eissd.rt.ru/mpz/ajax/internet/tariff_options';
 
     try {
@@ -701,7 +729,14 @@ export class EissdService implements OnModuleInit {
       throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
     }
   }
-  async getIPTVoptionsTariff(regionId: string, tariffId: string): Promise<any> {
+  /**
+   * Функция для получения опции для iptv тарифа. Есть тарифы, в которых обязательно должна быть опция. Допустим есть тариф: Технологический, но он включает в себя по умолчанию интернет.
+   *
+   * @param {string} [regionId=''] - регион. Пример - 01, 72, 50.
+   * @param {string} [tariffId=''] - айди тарифа.
+   * @returns {Promise<OptionI>} Возвращает объект опции для тарифа.
+   */
+  async getIPTVoptionsTariff(regionId: string, tariffId: string): Promise<OptionI> {
     const endpoint = 'https://eissd.rt.ru/mpz/ajax/iptv/tariff_options';
 
     try {
@@ -751,7 +786,16 @@ export class EissdService implements OnModuleInit {
     }
   }
   // Получение симки
-  async getSIMtariff(region: string, orgId: string, regionFullName: string): Promise<any> {
+  /**
+   * Функция для получения симки. Здесь есть проблема. Иногда тариф не находит, потому что не подходит айди mvno региона или его вообще нет.
+   * В таких случаях нужно заходить в eissd и дополнять объект mvnoRegions.
+   *
+   * @param {string} [region=''] - регион. Пример - 01, 72, 50.
+   * @param {string} [orgId=''] - айди орагинизации.
+   * @param {string} [regionFullName=''] - полное название региона.
+   * @returns {Promise<tariffSimI>} Возвращает объект опции для тарифа.
+   */
+  async getSIMtariff(region: string, orgId: string, regionFullName: string): Promise<tariffSimI> {
     const endpoint = 'https://eissd.rt.ru/ajax/mvno/get.tp.list';
     const mvnoRegions = {
       '66': 1,
@@ -848,7 +892,7 @@ export class EissdService implements OnModuleInit {
 
       const resultResponse = response.data.result;
 
-      const result = {
+      const result: tariffSimI = {
         serviceId: 10003,
         typeProduct: 1,
         typeTariff: 0,
@@ -872,6 +916,17 @@ export class EissdService implements OnModuleInit {
     }
   }
   // Создание и отправка заявки
+  /**
+   * Функция для отправки запроса на создание заявки. Внутри уже указан обязательный комментарий.
+   *
+   * @param {string} [name=''] - Имя клиента.
+   * @param {string} [lastname=''] - Фамилия клиента.
+   * @param {string} [phone=''] - Номер телефона клиента. Без знаков, пробелов, без +7 или 8, начинается обязательно с 9 Пример: 9998887766
+   * @param {string} [tariffs=''] - Список тарифов. Обязательно везде должны быть 3 типа тарифа.
+   * @param {string} [orgId=''] - Айди региона.
+   * @param {string} [eissdInfo=''] - Объект из функции для получения тхв, что бы брать от туда нужную инфу.
+   * @returns {Promise<any>} Потому что там приходит огромнейший объект и иногда разный.
+   */
   async sendAplication(name: string, lastname: string, phone: string, tariffs: any[], orgId: string, eissdInfo: ResultThvEissdI): Promise<any> {
     const endpoint = 'https://eissd.rt.ru/sales/api/ajax/save-order';
 
@@ -983,6 +1038,13 @@ export class EissdService implements OnModuleInit {
       throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
     }
   }
+  // Побочные функции
+  /**
+   * Функция для SOAP-запроса. Внутри уже сразу указаны сертификаты и ключи.
+   *
+   * @param {string} [body=''] - XML данные.
+   * @returns {Promise<string>} Возвращает данные.
+   */
   private async sendXMLRequest(body: string): Promise<string> {
     // Загрузка сертификата и ключа
     const cert = fs.readFileSync(this.pathCertProduct);
@@ -1029,6 +1091,12 @@ export class EissdService implements OnModuleInit {
       req.end();
     });
   }
+  /**
+   * Функция для парсинга XML-ответа.
+   *
+   * @param {string} [xmlData=''] - XML данные.
+   * @returns {Promise<string>} Возвращает парсенные данные.
+   */
   private async parseXmlResponse(xmlData: string): Promise<any> {
     try {
       const options = {
@@ -1046,9 +1114,14 @@ export class EissdService implements OnModuleInit {
       throw error; // Выбрасываем ошибку, если XML не удается распарсить
     }
   }
+  /**
+   * Функция для разбора номера. Информация о клиенте подтягивается из битрикса, а номер там могут написать от души.
+   *
+   * @param {string} [input=''] - Кривой номер телефона.
+   * @returns {Promise<string>} - Возвращает корректный номер.
+   */
   async validatePhoneNumber(input: string): Promise<string | null> {
     // Удаляем все пробелы, знаки `+`, `-`, `(`, `)` из номера
-    console.log(typeof input);
     const cleaned = input.replace(/[+\-\s()]/g, '');
 
     // Если номер начинается с 7 или 8 и имеет длину 11

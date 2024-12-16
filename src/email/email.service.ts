@@ -9,9 +9,7 @@ import * as imap from 'imap-simple';
 export class EmailService {
   private readonly imapConfig: imapConfigI;
 
-  constructor(
-    @Inject(ConfigService) private readonly configService: ConfigService,
-  ) {
+  constructor(@Inject(ConfigService) private readonly configService: ConfigService) {
     // Настройка конфигурации IMAP
     this.imapConfig = {
       imap: {
@@ -24,12 +22,16 @@ export class EmailService {
       },
     };
   }
-  async getEmails(
-    folder = 'INBOX',
-    startDate?: Date,
-    endDate?: Date,
-    from?: string,
-  ): Promise<parsEmail[]> {
+  /**
+   * Функция для получения сообщений с почты.
+   *
+   * @param folder - Название папки.
+   * @param startDate - Начало даты.
+   * @param endDate - Конец даты.
+   * @param from - Отправитель.
+   * @returns Возвращает массив объектов сообщений.
+   */
+  async getEmails(folder = 'INBOX', startDate?: Date, endDate?: Date, from?: string): Promise<parsEmail[]> {
     try {
       const connection = await imap.connect(this.imapConfig);
       await connection.openBox(folder); // Открываем указанную папку
@@ -68,9 +70,7 @@ export class EmailService {
       }
 
       // Асинхронный парсинг писем
-      const parsedEmails = await Promise.all(
-        results.map((emailObject) => this.parseEmailData(emailObject)),
-      );
+      const parsedEmails = await Promise.all(results.map((emailObject) => this.parseEmailData(emailObject)));
 
       connection.end();
       return parsedEmails;
@@ -79,28 +79,19 @@ export class EmailService {
       return [];
     }
   }
-  async getISPEmails(
-    folder = 'INBOX',
-    startDate?: Date,
-    endDate?: Date,
-  ): Promise<emailOutput[]> {
-    const emailsAlena = await this.getEmails(
-      folder,
-      startDate,
-      endDate,
-      'Л, Алёна <vo@isp-vrn.ru>',
-    );
-    const emailsISP = await this.getEmails(
-      folder,
-      startDate,
-      endDate,
-      'ISP <no-reply@isp-vrn.ru>',
-    );
+  /**
+   * Фильтр функция для получений писем от ISP.
+   *
+   * @param folder - Название папки.
+   * @param startDate - Начало даты.
+   * @param endDate - Конец даты.
+   * @returns Возвращает массив объектов сообщений.
+   */
+  async getISPEmails(folder = 'INBOX', startDate?: Date, endDate?: Date): Promise<emailOutput[]> {
+    const emailsAlena = await this.getEmails(folder, startDate, endDate, 'Л, Алёна <vo@isp-vrn.ru>');
+    const emailsISP = await this.getEmails(folder, startDate, endDate, 'ISP <no-reply@isp-vrn.ru>');
 
-    if (
-      (!emailsAlena || emailsAlena.length === 0) &&
-      (!emailsISP || emailsISP.length === 0)
-    ) {
+    if ((!emailsAlena || emailsAlena.length === 0) && (!emailsISP || emailsISP.length === 0)) {
       return [];
     }
 
@@ -125,17 +116,16 @@ export class EmailService {
 
     return [...parsedAlena, ...parsedISP];
   }
-  async getGdeluEmails(
-    folder = 'INBOX',
-    startDate?: Date,
-    endDate?: Date,
-  ): Promise<emailOutput[]> {
-    const emailsGdelu = await this.getEmails(
-      folder,
-      startDate,
-      endDate,
-      'clients@gdelu.ru',
-    );
+  /**
+   * Фильтр функция для получений писем от GDELU.
+   *
+   * @param folder - Название папки.
+   * @param startDate - Начало даты.
+   * @param endDate - Конец даты.
+   * @returns Возвращает массив объектов сообщений.
+   */
+  async getGdeluEmails(folder = 'INBOX', startDate?: Date, endDate?: Date): Promise<emailOutput[]> {
+    const emailsGdelu = await this.getEmails(folder, startDate, endDate, 'clients@gdelu.ru');
     if (!emailsGdelu || emailsGdelu.length === 0) {
       return [];
     }
@@ -152,6 +142,12 @@ export class EmailService {
   }
 
   // Вспомогательные функции
+  /**
+   * Парсид тела письма. Из за того что каждый отправляет в разном формате(.
+   *
+   * @param body - Тело сообщения.
+   * @returns Возвращает спарсенное тело письма.
+   */
   private async parseBodyEmailISP(body: string): Promise<emailOutput> {
     // Удаляем все <br /> из тела письма
     const cleanedBody = body.replace(/<br\s*\/?>/gi, '\n');
@@ -178,14 +174,10 @@ export class EmailService {
         result.id = item.split(':')[1].trim();
       } else if (item.includes('Примечание:')) {
         result.comment = item.split(':')[1].trim();
-      } else if (
-        !item.includes('Примечание:') &&
-        item.includes('Клиент указал желаемый способ связи:')
-      ) {
+      } else if (!item.includes('Примечание:') && item.includes('Клиент указал желаемый способ связи:')) {
         result.comment = item.split(':')[1].trim();
         if (result.comment) {
-          result.comment =
-            'Клиент указал желаемый способ связи:' + result.comment;
+          result.comment = 'Клиент указал желаемый способ связи:' + result.comment;
         }
       } else if (item.includes('Адрес:')) {
         result.address = item.split(':')[1].trim();
@@ -194,6 +186,12 @@ export class EmailService {
 
     return result;
   }
+  /**
+   * Парсид тела письма. Из за того что каждый отправляет в разном формате(.
+   *
+   * @param body - Тело сообщения.
+   * @returns Возвращает спарсенное тело письма.
+   */
   private async parseBodyEmailGDELU(body: string): Promise<emailOutput> {
     // Удаляем все <br /> из тела письма
     const cleanedBody = body.replace(/<br\s*\/?>/gi, '\n');
@@ -216,6 +214,12 @@ export class EmailService {
 
     return result;
   }
+  /**
+   * Где то сообщение в base64.
+   *
+   * @param body - Тело сообщения.
+   * @returns
+   */
   private async decoderBase64(body: string): Promise<string> {
     const base64Decoded = Buffer.from(body, 'base64').toString('utf-8');
     return base64Decoded;
@@ -224,6 +228,12 @@ export class EmailService {
     const email = await simpleParser(body);
     return email.text;
   }
+  /**
+   * Функция для парсинга данных из письма.
+   *
+   * @param email - Тело сообщения.
+   * @returns
+   */
   private async parseEmailData(emailObject: imap.Message): Promise<parsEmail> {
     if (!emailObject) {
       console.error('Email object is undefined or null');
@@ -235,9 +245,7 @@ export class EmailService {
     const date = emailObject.attributes?.date;
 
     // Извлечение заголовков
-    const headerPart = emailObject.parts.find(
-      (part) => part.which === 'HEADER',
-    );
+    const headerPart = emailObject.parts.find((part) => part.which === 'HEADER');
     const from = headerPart?.body?.['from']?.[0] || 'Не указано';
     const subject = headerPart?.body?.['subject']?.[0] || 'Без темы';
 

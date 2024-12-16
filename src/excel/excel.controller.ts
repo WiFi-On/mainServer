@@ -8,11 +8,16 @@ import { ActiveGuard } from '../auth/guards/active.guard';
 import { Roles } from '../auth/decorators/role.decorator';
 import { IsActive } from '../auth/decorators/activeUser.decorator';
 import { PartnerLeadsValidation } from './validations/partnerLeads.validation';
+import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Excel')
 @Controller('api/v1/excel')
 export class ExcelController {
   constructor(private readonly excelService: ExcelService) {}
 
+  @ApiOperation({ summary: 'Загрузка Excel-файла для полученея ТХВ по адресам. ' })
+  @ApiOkResponse({ description: 'Excel-файл успешно загружен' })
+  @ApiNotFoundResponse({ description: 'Файл не найден' })
   @Post('upload')
   @Roles('admin') // Укажите роль, которая имеет доступ
   @IsActive() // Проверка активности пользователя
@@ -36,6 +41,9 @@ export class ExcelController {
     }
   }
 
+  @ApiOperation({ summary: 'Загрузка Excel-файла для заведения заявок через eissd.' })
+  @ApiOkResponse({ description: 'Excel-файл успешно загружен' })
+  @ApiNotFoundResponse({ description: 'Файл не найден' })
   @Post('leadsEissd')
   @Roles('admin')
   @IsActive()
@@ -59,6 +67,9 @@ export class ExcelController {
     }
   }
 
+  @ApiOperation({ summary: 'Получение отчета по заявкам от партнеров' })
+  @ApiOkResponse({ description: 'Excel-файл успешно загружен' })
+  @ApiNotFoundResponse({ description: 'Файл не найден' })
   @Post('partnerLeads')
   @Roles('admin') // Укажите роль, которая имеет доступ
   @IsActive() // Проверка активности пользователя

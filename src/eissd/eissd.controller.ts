@@ -1,9 +1,11 @@
 // Nest
-import { Controller } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 
 // Services
 import { EissdService } from './eissd.service';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('eissd')
 @Controller('api/v1/eissd')
 export class EissdController {
   // private readonly logger = new Logger(EissdController.name);
@@ -31,6 +33,10 @@ export class EissdController {
   //   }
   // }
 
+  @Get('getTHV')
+  async getTHV() {
+    return this.EissdService.checkTHV('Широтная 105 кв. 1');
+  }
   // @Get('testAuth')
   // async testAuth() {
   //   return this.EissdService.authEissd();
