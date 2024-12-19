@@ -1,7 +1,7 @@
 // src/auth/auth.service.ts
 import { UnauthorizedException, Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 import { JwtService } from '@nestjs/jwt';
 
@@ -56,16 +56,11 @@ export class AuthService {
     }
 
     // Создание токена с заданным временем жизни
-    const token = await this.jwtService.signAsync(
-      { id, email, role, is_active, partner_id },
-      { expiresIn },
-    );
+    const token = await this.jwtService.signAsync({ id, email, role, is_active, partner_id }, { expiresIn });
 
     // Установка времени жизни токена
     const tokenLifetime = new Date();
-    tokenLifetime.setDate(
-      tokenLifetime.getDate() + Number(expiresIn.slice(0, -1)),
-    );
+    tokenLifetime.setDate(tokenLifetime.getDate() + Number(expiresIn.slice(0, -1)));
 
     // Обновление времени жизни токена в базе данных
     await this.userService.updateTokenLifetime(id, token, tokenLifetime);
@@ -77,9 +72,7 @@ export class AuthService {
   async register(email: string, password: string): Promise<any> {
     const existingUser = await this.userService.getUserByEmail(email);
     if (existingUser) {
-      throw new UnauthorizedException(
-        'Пользователь с таким email уже существует',
-      );
+      throw new UnauthorizedException('Пользователь с таким email уже существует');
     }
 
     // Создаем пользователя без токена

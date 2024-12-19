@@ -1,5 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { ActiveDay } from './active_day.entity'; // Импортируем ActiveDay entity
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity('schedule_users')
 export class ScheduleUser {
@@ -8,7 +7,4 @@ export class ScheduleUser {
 
   @Column({ type: 'boolean' })
   admin: boolean;
-
-  @OneToMany(() => ActiveDay, (activeDay) => activeDay.idWorker)
-  activeDays: ActiveDay[];
 }

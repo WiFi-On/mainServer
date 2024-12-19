@@ -1,9 +1,9 @@
-import { Body, Controller, Post, NotFoundException } from '@nestjs/common';
+import { Body, Controller, Post, NotFoundException, HttpException, BadRequestException } from '@nestjs/common';
 import { ScheduleService } from './schedule.service';
 import { ScheduleUser } from '../db1/entities/schedule_user.entity';
-import { ActiveDay } from '../db1/entities/active_day.entity';
 import { AddActiveDayValidation } from './validations/active_days.validation';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CheckInitDataDto } from './dtos/checkInitData.dto';
 
 @ApiTags('Schedule')
 @Controller('api/v1/schedule')
@@ -11,7 +11,7 @@ export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
   @ApiOperation({ summary: 'Проверка существования пользователя по телеграмм айди.' })
-  @Post('checkUser') // Используем POST для получения данных из тела запроса
+  @Post('checkUser')
   async checkUser(
     @Body() body: { telegramId: number }, // Получаем telegramId из тела запроса
   ): Promise<ScheduleUser> {
@@ -26,12 +26,30 @@ export class ScheduleController {
   }
 
   @ApiOperation({ summary: 'Добавление рабочего дня' })
-  @Post('addActiveDay')
-  async addActiveDay(@Body() body: AddActiveDayValidation): Promise<ActiveDay> {
-    const activeDay = await this.scheduleService.addActiveDay(body.idWorker, body.date, body.startWorkTime, body.endWorkTime, body.office);
-    if (!activeDay) {
-      throw new NotFoundException('Рабочий день не создан');
+  @Post('addWorkDay')
+  async addActiveDay(@Body() body: AddActiveDayValidation): Promise<any> {
+    console.log(body);
+    console.log(this.scheduleService.checkWebAppSignature(body.initData));
+    try {
+      if (!(await this.scheduleService.checkWebAppSignature(body.initData))) {
+        throw new HttpException('Unauthorized', 401);
+      }
+      const activeDay = await this.scheduleService.addActiveDay(body.idEmployee, body.date, body.startTime, body.endTime, body.officeWork);
+      console.log(activeDay);
+      throw new HttpException(activeDay, 201);
+    } catch (error) {
+      throw new HttpException('Error server: ' + error.message, 500);
     }
-    return activeDay;
+  }
+
+  @Post('checkInitData')
+  async checkInitData(@Body() body: CheckInitDataDto): Promise<{ result: boolean }> {
+    try {
+      const isValid = await this.scheduleService.checkWebAppSignature(body.initData);
+      return { result: isValid };
+    } catch {
+      // Логирование ошибки, если нужно
+      throw new BadRequestException('Invalid initData');
+    }
   }
 }

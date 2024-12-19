@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UsersRepository } from '../db1/repositories/users.repository';
 import { User } from '../db1/entities/user.entity';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs'; // Изменение bcrypt на bcryptjs
 @Injectable()
 export class UserService {
   constructor(private readonly usersRepository: UsersRepository) {}
@@ -23,20 +23,10 @@ export class UserService {
     const tokenLifetime = new Date(dateNow.setDate(dateNow.getDate() + 30));
     const role = 'user';
 
-    return this.usersRepository.createUser(
-      email,
-      hashPassword,
-      role,
-      token,
-      tokenLifetime,
-    );
+    return this.usersRepository.createUser(email, hashPassword, role, token, tokenLifetime);
   }
 
-  async updateTokenLifetime(
-    userId: number,
-    token: string,
-    tokenLifetime: Date,
-  ) {
+  async updateTokenLifetime(userId: number, token: string, tokenLifetime: Date) {
     await this.usersRepository.updateTimeToken(userId, token, tokenLifetime);
   }
 }

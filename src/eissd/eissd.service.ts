@@ -1,8 +1,9 @@
 // nest
-import { Injectable, Inject, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
+// import { OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { Cron } from '@nestjs/schedule';
+// import { Cron } from '@nestjs/schedule';
 // node
 import axios, { AxiosResponse } from 'axios';
 import { firstValueFrom } from 'rxjs';
@@ -23,7 +24,7 @@ import OptionI from './interfaces/option.interface';
 import tariffSimI from './interfaces/tariffSim.interface';
 
 @Injectable()
-export class EissdService implements OnModuleInit {
+export class EissdService /* implements OnModuleInit */ {
   private readonly logger = new Logger(EissdService.name);
   private readonly pathKeyProduct: string;
   private readonly pathCertProduct: string;
@@ -81,10 +82,10 @@ export class EissdService implements OnModuleInit {
    * Функция запускается при инициализации модуля. Нужно для получения куки файла сессии, что бы в дальнейшем можно было использовать нужные ручки.
    * @returns {Promise<void>}
    */
-  async onModuleInit(): Promise<void> {
-    this.sessionId = await this.authEissd();
-    await this.main();
-  }
+  // async onModuleInit(): Promise<void> {
+  //   this.sessionId = await this.authEissd();
+  //   await this.main();
+  // }
 
   /**
    * Главная функция, которая запускается каждые 2 минуты для заведения заявок из колоник в bitrix.
@@ -93,33 +94,33 @@ export class EissdService implements OnModuleInit {
    * Если придется что то улучшать, нужно будет заходить на сайт и через браузер взять нужные ручки.
    * @returns {Promise<void>} Данные, возвращаемые системой Bitrix24 при успешном создании контакта.
    */
-  @Cron('*/2 * * * *')
-  async main(): Promise<void> {
-    const leadsBitrixRtk = await this.bitrixService.getDealsOnProviders();
-    if (!leadsBitrixRtk.length) {
-      this.logger.error(`Лидов нет || PATH: eissd/main`);
-      return;
-    }
-    for (const lead of leadsBitrixRtk) {
-      const application = await this.formingApplication(lead.address, lead.number, lead.fio);
-      if (lead.provider_id == '52') {
-        if (application.err) {
-          this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
-          this.bitrixService.moveToError(lead.id, application.result);
-          continue;
-        } else if (!application.err && application.result.includes('Заявка на сохранении')) {
-          this.logger.log(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
-          this.bitrixService.moveToInStorage(lead.id, application.result);
-        } else if (!application.err && application.result.includes('Заявка назначена')) {
-          this.logger.log(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
-          this.bitrixService.moveToAppointed(lead.id, application.result);
-        }
-      } else if (!lead.comment) {
-        this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
-        this.bitrixService.editComment(lead.id, application.result);
-      }
-    }
-  }
+  // @Cron('*/2 * * * *')
+  // async main(): Promise<void> {
+  //   const leadsBitrixRtk = await this.bitrixService.getDealsOnProviders();
+  //   if (!leadsBitrixRtk.length) {
+  //     this.logger.error(`Лидов нет || PATH: eissd/main`);
+  //     return;
+  //   }
+  //   for (const lead of leadsBitrixRtk) {
+  //     const application = await this.formingApplication(lead.address, lead.number, lead.fio);
+  //     if (lead.provider_id == '52') {
+  //       if (application.err) {
+  //         this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
+  //         this.bitrixService.moveToError(lead.id, application.result);
+  //         continue;
+  //       } else if (!application.err && application.result.includes('Заявка на сохранении')) {
+  //         this.logger.log(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
+  //         this.bitrixService.moveToInStorage(lead.id, application.result);
+  //       } else if (!application.err && application.result.includes('Заявка назначена')) {
+  //         this.logger.log(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
+  //         this.bitrixService.moveToAppointed(lead.id, application.result);
+  //       }
+  //     } else if (!lead.comment) {
+  //       this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
+  //       this.bitrixService.editComment(lead.id, application.result);
+  //     }
+  //   }
+  // }
   /**
    * Формируем полностью заявку и отправляем ее.
    * 1) Получение технической возможности и информации по адресу. Техническая возможность - можно ли подключать клиента по адресу и по какой технологии.
