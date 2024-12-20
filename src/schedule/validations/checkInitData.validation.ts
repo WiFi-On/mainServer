@@ -1,6 +1,6 @@
 import { IsString } from 'class-validator';
 
-export class CheckInitDataDto {
+export class CheckInitDataValidation {
   @IsString()
   initData: string;
 }

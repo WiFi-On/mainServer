@@ -6,10 +6,10 @@ export class EmployeeSchedule {
   id: number;
 
   @Column({ type: 'time', nullable: false })
-  startTime: string; // TIME в SQL представлено как string в TypeScript
+  start_time: string; // TIME в SQL представлено как string в TypeScript
 
   @Column({ type: 'time', nullable: false })
-  endTime: string;
+  end_time: string;
 
   @Column({ type: 'date', nullable: false })
   date: string; // DATE в SQL также представлен как string
@@ -18,7 +18,7 @@ export class EmployeeSchedule {
   office: boolean;
 
   @Column({ type: 'int', nullable: false })
-  userId: number;
+  user_id: number;
 
   @Column({
     type: 'text',

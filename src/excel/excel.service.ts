@@ -220,7 +220,8 @@ export class ExcelService {
       const number = data[i][0].toString();
       const fio = data[i][1];
       const address = data[i][2];
-      const result = await this.eissdService.formingApplication(address, number, fio);
+      const thv = await this.eissdService.checkTHV(address);
+      const result = await this.eissdService.formingApplication(number, fio, thv);
 
       data[i].push(result.result);
     }

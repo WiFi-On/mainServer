@@ -3,12 +3,17 @@ import { ScheduleService } from './schedule.service';
 import { ScheduleUser } from '../db1/entities/schedule_user.entity';
 import { AddActiveDayValidation } from './validations/active_days.validation';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { CheckInitDataDto } from './dtos/checkInitData.dto';
+import { CheckInitDataValidation } from './validations/checkInitData.validation';
+import { EditStatusActiveDayValidation } from './validations/editStatusActiveDay.validation';
+// import { GetScheduleValidation } from './validations/getSchedule.validation';
 
 @ApiTags('Schedule')
 @Controller('api/v1/schedule')
 export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
+
+  // @Get()
+  // async getSchedule(@Query() query: GetScheduleValidation): Promise<any> {}
 
   @ApiOperation({ summary: 'Проверка существования пользователя по телеграмм айди.' })
   @Post('checkUser')
@@ -43,7 +48,7 @@ export class ScheduleController {
   }
 
   @Post('checkInitData')
-  async checkInitData(@Body() body: CheckInitDataDto): Promise<{ result: boolean }> {
+  async checkInitData(@Body() body: CheckInitDataValidation): Promise<{ result: boolean }> {
     try {
       const isValid = await this.scheduleService.checkWebAppSignature(body.initData);
       return { result: isValid };
@@ -51,5 +56,10 @@ export class ScheduleController {
       // Логирование ошибки, если нужно
       throw new BadRequestException('Invalid initData');
     }
+  }
+
+  @Post('editStatusActiveDay')
+  async editStatusActiveDay(@Body() body: EditStatusActiveDayValidation): Promise<any> {
+    return this.scheduleService.editStatusActiveDay(body.id, body.status);
   }
 }

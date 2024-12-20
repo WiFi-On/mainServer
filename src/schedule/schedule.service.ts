@@ -5,7 +5,7 @@ import { ScheduleUsersRepository } from '../db1/repositories/schedule_users.repo
 import { EmployeeScheduleRepository } from 'src/db1/repositories/employee_schedule.repository';
 
 import { ScheduleUser } from '../db1/entities/schedule_user.entity';
-
+// import { GetScheduleValidation } from './validations/getSchedule.validation';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -22,12 +22,17 @@ export class ScheduleService {
 
   async addActiveDay(idWorker: number, date: string, startWorkTime: string, endWorkTime: string, office: boolean) {
     return this.employeeScheduleRepository.addActiveDay({
-      userId: idWorker,
+      user_id: idWorker,
       date,
-      startTime: startWorkTime,
-      endTime: endWorkTime,
+      start_time: startWorkTime,
+      end_time: endWorkTime,
       office,
+      status: 'В ожидании',
     });
+  }
+
+  async editStatusActiveDay(id: number, status: string) {
+    return this.employeeScheduleRepository.editStatusActiveDay(id, status);
   }
 
   async checkWebAppSignature(initData: string): Promise<boolean> {
@@ -70,4 +75,8 @@ export class ScheduleService {
       return false;
     }
   }
+
+  // async getActiveDays(filters: GetScheduleValidation): Promise<any> {
+  //   return this.employeeScheduleRepository.getActiveDays(idEmployee, office, status, startDate, endDate);
+  // }
 }
