@@ -5,6 +5,15 @@ export class ScheduleUser {
   @PrimaryGeneratedColumn()
   telegram_id: number;
 
-  @Column({ type: 'boolean' })
+  @Column()
   admin: boolean;
+
+  @Column()
+  first_name: string;
+
+  @Column()
+  last_name: string;
+
+  @Column()
+  middle_name: string;
 }

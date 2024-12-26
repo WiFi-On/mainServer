@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsString } from 'class-validator';
+import { IsInt, IsNotEmpty, IsString, IsIn } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class EditStatusActiveDayValidation {
@@ -15,5 +15,6 @@ export class EditStatusActiveDayValidation {
 
   @IsString()
   @IsNotEmpty({ message: 'Статус не может быть пустым' })
+  @IsIn(['В ожидании', 'Отказ', 'Согласовано'])
   status: string;
 }

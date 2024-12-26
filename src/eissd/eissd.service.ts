@@ -1,9 +1,9 @@
 // nest
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { Cron } from '@nestjs/schedule';
+import { OnModuleInit } from '@nestjs/common';
 // node
 import axios, { AxiosResponse } from 'axios';
 import { firstValueFrom } from 'rxjs';
@@ -96,35 +96,26 @@ export class EissdService implements OnModuleInit {
    */
   @Cron('*/2 * * * *')
   async main(): Promise<void> {
-    const leadsBitrixRtk = await this.bitrixService.getDealsOnProviders();
+    const leadsBitrixRtk = await this.bitrixService.getDealsOnProviders(52);
     if (!leadsBitrixRtk.length) {
       this.logger.error(`Лидов нет || PATH: eissd/main`);
       return;
     }
     for (const lead of leadsBitrixRtk) {
       const thv = await this.checkTHV(lead.address);
-      if (lead.provider_id == '52') {
-        if (thv.result.thv) {
-          const application = await this.formingApplication(lead.number, lead.fio, thv);
-          if (application.err) {
-            this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
-            this.bitrixService.moveToError(lead.id, application.result);
-            continue;
-          } else if (!application.err && application.result.includes('Заявка назначена')) {
-            this.logger.log(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
-            this.bitrixService.moveToAppointed(lead.id, application.result);
-          }
-        } else {
-          this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${thv.result.thv}`);
-          this.bitrixService.moveToError(lead.id, 'проверка ТХВ');
-        }
-      } else if (!lead.comment && thv.result.thv) {
+      if (thv.result.thv) {
         const application = await this.formingApplication(lead.number, lead.fio, thv);
-        this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
-        this.bitrixService.editComment(lead.id, application.result);
-      } else if (!lead.comment && !thv.result.thv) {
-        this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: Нет ТХВ`);
-        this.bitrixService.editComment(lead.id, 'проверка ТХВ');
+        if (application.err) {
+          this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
+          this.bitrixService.moveToError(lead.id, application.result);
+          continue;
+        } else if (!application.err && application.result.includes('Заявка назначена')) {
+          this.logger.log(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
+          this.bitrixService.moveToAppointed(lead.id, application.result);
+        }
+      } else {
+        this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${thv.result.thv}`);
+        this.bitrixService.moveToError(lead.id, 'проверка ТХВ');
       }
     }
   }

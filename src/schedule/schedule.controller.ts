@@ -1,19 +1,21 @@
-import { Body, Controller, Post, NotFoundException, HttpException, BadRequestException } from '@nestjs/common';
+import { Body, Controller, Post, NotFoundException, HttpException, BadRequestException, Get, Query } from '@nestjs/common';
 import { ScheduleService } from './schedule.service';
 import { ScheduleUser } from '../db1/entities/schedule_user.entity';
 import { AddActiveDayValidation } from './validations/active_days.validation';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CheckInitDataValidation } from './validations/checkInitData.validation';
 import { EditStatusActiveDayValidation } from './validations/editStatusActiveDay.validation';
-// import { GetScheduleValidation } from './validations/getSchedule.validation';
+import { GetScheduleValidation } from './validations/getSchedule.validation';
 
 @ApiTags('Schedule')
 @Controller('api/v1/schedule')
 export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
-  // @Get()
-  // async getSchedule(@Query() query: GetScheduleValidation): Promise<any> {}
+  @Get()
+  async getSchedule(@Query() query: GetScheduleValidation): Promise<any> {
+    return this.scheduleService.getActiveDays(query);
+  }
 
   @ApiOperation({ summary: 'Проверка существования пользователя по телеграмм айди.' })
   @Post('checkUser')

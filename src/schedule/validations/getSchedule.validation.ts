@@ -1,7 +1,7 @@
-import { IsOptional, IsString, IsDateString, IsInt, IsIn, IsBoolean } from 'class-validator';
+import { IsOptional, IsString, IsInt, IsIn, IsBoolean } from 'class-validator';
 
 export class GetScheduleValidation {
-  @IsDateString()
+  @IsString()
   initData: string;
 
   @IsOptional()

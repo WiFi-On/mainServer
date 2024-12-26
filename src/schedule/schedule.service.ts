@@ -5,7 +5,7 @@ import { ScheduleUsersRepository } from '../db1/repositories/schedule_users.repo
 import { EmployeeScheduleRepository } from 'src/db1/repositories/employee_schedule.repository';
 
 import { ScheduleUser } from '../db1/entities/schedule_user.entity';
-// import { GetScheduleValidation } from './validations/getSchedule.validation';
+import { GetScheduleValidation } from './validations/getSchedule.validation';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -76,7 +76,15 @@ export class ScheduleService {
     }
   }
 
-  // async getActiveDays(filters: GetScheduleValidation): Promise<any> {
-  //   return this.employeeScheduleRepository.getActiveDays(idEmployee, office, status, startDate, endDate);
-  // }
+  async getActiveDays(filters: GetScheduleValidation): Promise<any> {
+    const { idEmployee, office, status, startDate, endDate } = filters;
+
+    return this.employeeScheduleRepository.getActiveDays({
+      idEmployee,
+      office,
+      status,
+      startDate,
+      endDate,
+    });
+  }
 }
