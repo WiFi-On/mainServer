@@ -141,6 +141,8 @@ export class EissdService implements OnModuleInit {
    * @returns {Promise<BitrixReturnData>} Данные, возвращаемые системой Bitrix24 при успешном создании контакта.
    */
   async formingApplication(number: string, fio: string, thv: ResultThvEissdI): Promise<{ err: boolean; result: string }> {
+    thv.result = { TechName: 'xDSL', Res: 'Y', TechId: '10035', thv: true };
+
     try {
       const orgId = await this.getOrgId(thv.infoAddress.regionId);
       if (!orgId) {
