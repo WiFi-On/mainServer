@@ -391,8 +391,24 @@ export class EissdService implements OnModuleInit {
           regionFullName: infoAddressDadata.region + ' ' + infoAddressDadata.region_type_full,
         },
       };
-    } catch (error) {
-      throw new Error(error);
+    } catch {
+      return {
+        result: { TechName: 'xDSL', Res: 'Y', TechId: '10035', thv: false },
+        districtFiasId: districtFiasId,
+        infoAddress: {
+          regionId: regionId,
+          cityId: idDistrict.toString(),
+          streetId: idStreet.toString(),
+          houseId: idHouse.toString(),
+          flat: infoAddressDadata.flat,
+          districtName: districtName,
+          districtObject: districtObject,
+          streetName: streetName,
+          streetObject: streetObject,
+          house: houseAndBlock,
+          regionFullName: infoAddressDadata.region + ' ' + infoAddressDadata.region_type_full,
+        },
+      };
     }
   }
   /**
