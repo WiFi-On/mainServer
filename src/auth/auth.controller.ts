@@ -29,6 +29,8 @@ export class AuthController {
         });
       }
 
+      res.cookie('token', token, { httpOnly: true });
+
       return res.status(HttpStatus.OK).json(new LoginResponseDto(token));
     } catch (error) {
       this.logger.error('Ошибка входа пользователя.', error.stack);
