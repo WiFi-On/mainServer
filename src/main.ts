@@ -4,6 +4,7 @@ import * as winston from 'winston';
 import { WinstonModule } from 'nest-winston';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'; // Импортируем необходимые модули
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -35,29 +36,34 @@ async function bootstrap() {
     }),
   });
 
+  // Получаем текущий режим
+  const configService = app.get(ConfigService);
+  const environment = configService.get<string>('ENV');
+
   // Включаем глобальный пайп валидации
   app.useGlobalPipes(new ValidationPipe());
 
-  // Настройка CORS
-  // prod
-  // app.enableCors({
-  //   origin: (origin, callback) => {
-  //     const allowedOrigins = ['*', 'http://localhost:3000', 'https://on-wifi.ru'];
-  //     if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
-  //       callback(null, true);
-  //     } else {
-  //       callback(new Error('Not allowed by CORS'));
-  //     }
-  //   },
-  //   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  //   credentials: true,
-  // });
-  // dev
-  app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-  });
+  // Настройка CORS в зависимости от режима
+  if (environment === 'dev') {
+    app.enableCors({
+      origin: '*',
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      credentials: true,
+    });
+  } else {
+    app.enableCors({
+      origin: (origin, callback) => {
+        const allowedOrigins = ['*', 'http://localhost:3000', 'https://on-wifi.ru'];
+        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      credentials: true,
+    });
+  }
 
   // Настройка Swagger
   const options = new DocumentBuilder()

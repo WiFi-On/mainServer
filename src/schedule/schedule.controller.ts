@@ -36,13 +36,11 @@ export class ScheduleController {
   @Post('addWorkDay')
   async addActiveDay(@Body() body: AddActiveDayValidation): Promise<any> {
     console.log(body);
-    console.log(this.scheduleService.checkWebAppSignature(body.initData));
     try {
       if (!(await this.scheduleService.checkWebAppSignature(body.initData))) {
         throw new HttpException('Unauthorized', 401);
       }
-      const activeDay = await this.scheduleService.addActiveDay(body.idEmployee, body.date, body.startTime, body.endTime, body.officeWork);
-      console.log(activeDay);
+      const activeDay = await this.scheduleService.addActiveDay(body.initData, body.date, body.startTime, body.endTime, body.officeWork);
       throw new HttpException(activeDay, 201);
     } catch (error) {
       throw new HttpException('Error server: ' + error.message, 500);

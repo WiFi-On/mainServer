@@ -30,6 +30,7 @@ export class EissdService implements OnModuleInit {
   private readonly pathCertProduct: string;
   private readonly pathKeyDev: string;
   private readonly pathCertDev: string;
+  private readonly enviroment: string;
   private readonly mrfRegionList: string[];
   private sessionId: string;
   constructor(
@@ -45,6 +46,7 @@ export class EissdService implements OnModuleInit {
     this.pathCertProduct = this.configService.get<string>('EISSD_CERT_PRODUCT');
     this.pathKeyDev = this.configService.get<string>('EISSD_KEY_DEV');
     this.pathCertDev = this.configService.get<string>('EISSD_CERT_DEV');
+    this.enviroment = this.configService.get<string>('ENV');
     this.mrfRegionList = [
       '28',
       '79',
@@ -82,9 +84,12 @@ export class EissdService implements OnModuleInit {
    * Функция запускается при инициализации модуля. Нужно для получения куки файла сессии, что бы в дальнейшем можно было использовать нужные ручки.
    * @returns {Promise<void>}
    */
+
   async onModuleInit(): Promise<void> {
-    this.sessionId = await this.authEissd();
-    await this.main();
+    if (this.enviroment === 'prod') {
+      this.sessionId = await this.authEissd();
+      await this.main();
+    }
   }
 
   /**
@@ -96,26 +101,28 @@ export class EissdService implements OnModuleInit {
    */
   @Cron('*/2 * * * *')
   async main(): Promise<void> {
-    const leadsBitrixRtk = await this.bitrixService.getDealsOnProviders(52);
-    if (!leadsBitrixRtk.length) {
-      this.logger.error(`Лидов нет || PATH: eissd/main`);
-      return;
-    }
-    for (const lead of leadsBitrixRtk) {
-      const thv = await this.checkTHV(lead.address);
-      if (thv.result.thv) {
-        const application = await this.formingApplication(lead.number, lead.fio, thv);
-        if (application.err) {
-          this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
-          this.bitrixService.moveToError(lead.id, application.result);
-          continue;
-        } else if (!application.err && application.result.includes('Заявка назначена')) {
-          this.logger.log(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
-          this.bitrixService.moveToAppointed(lead.id, application.result);
+    if (this.enviroment === 'prod') {
+      const leadsBitrixRtk = await this.bitrixService.getDealsOnProviders(52);
+      if (!leadsBitrixRtk.length) {
+        this.logger.error(`Лидов нет || PATH: eissd/main`);
+        return;
+      }
+      for (const lead of leadsBitrixRtk) {
+        const thv = await this.checkTHV(lead.address);
+        if (thv.result.thv) {
+          const application = await this.formingApplication(lead.number, lead.fio, thv);
+          if (application.err) {
+            this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
+            this.bitrixService.moveToError(lead.id, application.result);
+            continue;
+          } else if (!application.err && application.result.includes('Заявка назначена')) {
+            this.logger.log(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
+            this.bitrixService.moveToAppointed(lead.id, application.result);
+          }
+        } else {
+          this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${thv.result.thv}`);
+          this.bitrixService.moveToError(lead.id, 'проверка ТХВ');
         }
-      } else {
-        this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${thv.result.thv}`);
-        this.bitrixService.moveToError(lead.id, 'проверка ТХВ');
       }
     }
   }
@@ -270,8 +277,10 @@ export class EissdService implements OnModuleInit {
     let dateNow = currentDate.toISOString();
     dateNow = dateNow.slice(0, 19) + '+00:00';
 
+    console.log('address: ', address);
     // Получаем данные от DaData
     const infoDadata = await this.dadataService.addressCheck(address);
+    console.log('infoDadata: ', infoDadata);
     if (!infoDadata) {
       throw new Error('Ошибка в получении информации от DaData');
     }

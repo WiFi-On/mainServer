@@ -8,6 +8,8 @@ import { ScheduleUser } from '../db1/entities/schedule_user.entity';
 import { GetScheduleValidation } from './validations/getSchedule.validation';
 import * as crypto from 'crypto';
 
+import InitDataObject from './interfaces/initDataObject.interface';
+
 @Injectable()
 export class ScheduleService {
   constructor(
@@ -20,10 +22,11 @@ export class ScheduleService {
     return this.scheduleUsersRepository.isUserExist(telegramId);
   }
 
-  async addActiveDay(idWorker: number, date: string, startWorkTime: string, endWorkTime: string, office: boolean) {
+  async addActiveDay(initData: string, date: string, startWorkTime: string, endWorkTime: string, office: boolean) {
+    const { user } = await this.parseInitData(initData);
     return this.employeeScheduleRepository.addActiveDay({
-      user_id: idWorker,
-      date,
+      user_id: user.id,
+      date: date,
       start_time: startWorkTime,
       end_time: endWorkTime,
       office,
@@ -33,6 +36,25 @@ export class ScheduleService {
 
   async editStatusActiveDay(id: number, status: string) {
     return this.employeeScheduleRepository.editStatusActiveDay(id, status);
+  }
+
+  async parseInitData(initData: string): Promise<InitDataObject> {
+    try {
+      const parsedData: Record<string, string> = Object.fromEntries(new URLSearchParams(initData));
+
+      // Приводим данные к нужному типу
+      const initDataObject: InitDataObject = {
+        query_id: parsedData.query_id,
+        user: JSON.parse(parsedData.user),
+        auth_date: parsedData.auth_date,
+        signature: parsedData.signature,
+        hash: parsedData.hash,
+      };
+
+      return initDataObject;
+    } catch (error) {
+      throw new Error('Ошибка в парсинге initData: ' + error.message);
+    }
   }
 
   async checkWebAppSignature(initData: string): Promise<boolean> {
@@ -46,7 +68,8 @@ export class ScheduleService {
      * @returns true, если подпись валидна, иначе user
      */
     try {
-      const parsedData = Object.fromEntries(new URLSearchParams(initData));
+      const parsedData = await this.parseInitData(initData);
+      console.log(parsedData);
       const token = this.configService.get<string>('TG_API_KEY');
       if (!parsedData.hash) {
         // Хэш отсутствует в данных
