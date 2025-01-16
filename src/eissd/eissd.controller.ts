@@ -37,10 +37,10 @@ export class EissdController {
   async getTHV() {
     return this.EissdService.checkTHV('Широтная 105 кв. 1');
   }
-  // @Get('testAuth')
-  // async testAuth() {
-  //   return this.EissdService.authEissd();
-  // }
+  @Get('testAuth')
+  async testAuth() {
+    return this.EissdService.authEissd();
+  }
   // @Get('testTHV')
   // async testTHV() {
   //   return this.EissdService.checkTHV('Широтная 105 кв. 1');

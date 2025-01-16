@@ -100,8 +100,9 @@ export class ScheduleService {
   }
 
   async getActiveDays(filters: GetScheduleValidation): Promise<any> {
-    const { idEmployee, office, status, startDate, endDate } = filters;
-
+    const { office, status, startDate, endDate } = filters;
+    // const { user } = await this.parseInitData(filters.initData);
+    const idEmployee = 625835890;
     return this.employeeScheduleRepository.getActiveDays({
       idEmployee,
       office,

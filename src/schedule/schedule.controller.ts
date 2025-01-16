@@ -1,4 +1,4 @@
-import { Body, Controller, Post, NotFoundException, HttpException, BadRequestException, Get, Query } from '@nestjs/common';
+import { Body, Controller, Post, NotFoundException, HttpException, Get, Query } from '@nestjs/common';
 import { ScheduleService } from './schedule.service';
 import { ScheduleUser } from '../db1/entities/schedule_user.entity';
 import { AddActiveDayValidation } from './validations/active_days.validation';
@@ -6,6 +6,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CheckInitDataValidation } from './validations/checkInitData.validation';
 import { EditStatusActiveDayValidation } from './validations/editStatusActiveDay.validation';
 import { GetScheduleValidation } from './validations/getSchedule.validation';
+import scheduleInterface from './interfaces/schedule.interface';
 
 @ApiTags('Schedule')
 @Controller('api/v1/schedule')
@@ -13,8 +14,15 @@ export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
   @Get()
-  async getSchedule(@Query() query: GetScheduleValidation): Promise<any> {
-    return this.scheduleService.getActiveDays(query);
+  async getSchedule(@Query() query: GetScheduleValidation): Promise<scheduleInterface> {
+    try {
+      // if (!(await this.scheduleService.checkWebAppSignature(query.initData))) {
+      //   throw new HttpException('Unauthorized', 401);
+      // }
+      return this.scheduleService.getActiveDays(query);
+    } catch (error) {
+      throw new HttpException('Error server: ' + error.message, 500);
+    }
   }
 
   @ApiOperation({ summary: 'Проверка существования пользователя по телеграмм айди.' })
@@ -52,14 +60,18 @@ export class ScheduleController {
     try {
       const isValid = await this.scheduleService.checkWebAppSignature(body.initData);
       return { result: isValid };
-    } catch {
+    } catch (error) {
       // Логирование ошибки, если нужно
-      throw new BadRequestException('Invalid initData');
+      throw new HttpException('Error server: ' + error.message, 500);
     }
   }
 
   @Post('editStatusActiveDay')
   async editStatusActiveDay(@Body() body: EditStatusActiveDayValidation): Promise<any> {
-    return this.scheduleService.editStatusActiveDay(body.id, body.status);
+    try {
+      return this.scheduleService.editStatusActiveDay(body.id, body.status);
+    } catch (error) {
+      throw new HttpException('Error server: ' + error.message, 500);
+    }
   }
 }

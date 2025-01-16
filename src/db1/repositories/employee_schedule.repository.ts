@@ -47,6 +47,9 @@ export class EmployeeScheduleRepository {
     // Подгружаем данные пользователя, используя связь с таблицей schedule_users
     queryBuilder.leftJoinAndSelect('schedule.user', 'user'); // указываем, что нужно подгрузить связанного пользователя
 
+    // Добавляем сортировку по дате
+    queryBuilder.orderBy('schedule.date', 'ASC');
+
     // Выполняем запрос и возвращаем данные
     return queryBuilder.getMany();
   }
