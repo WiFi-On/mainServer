@@ -18,7 +18,6 @@ export class EmployeeScheduleRepository {
   async editStatusActiveDay(id: number, status: string): Promise<any> {
     return await this.activeDayRepository.update({ id }, { status });
   }
-
   async getActiveDays(filters: { idEmployee?: number; office?: boolean; status?: string; startDate?: string; endDate?: string }): Promise<any> {
     const queryBuilder = this.activeDayRepository.createQueryBuilder('schedule');
 
@@ -52,5 +51,8 @@ export class EmployeeScheduleRepository {
 
     // Выполняем запрос и возвращаем данные
     return queryBuilder.getMany();
+  }
+  async delActiveDay(id: number): Promise<any> {
+    return await this.activeDayRepository.delete({ id });
   }
 }

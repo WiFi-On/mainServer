@@ -19,6 +19,7 @@ export class HouseRepository {
       },
     });
 
-    return house ? houseResult.id : null;
+    // Проверяем, что houseResult не равен null
+    return houseResult ? houseResult.id : null;
   }
 }

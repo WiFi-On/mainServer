@@ -79,19 +79,16 @@ export class EissdService implements OnModuleInit {
       '39',
     ];
   }
-
   /**
    * Функция запускается при инициализации модуля. Нужно для получения куки файла сессии, что бы в дальнейшем можно было использовать нужные ручки.
    * @returns {Promise<void>}
    */
-
   async onModuleInit(): Promise<void> {
     if (this.enviroment === 'prod') {
       this.sessionId = await this.authEissd();
       await this.main();
     }
   }
-
   /**
    * Главная функция, которая запускается каждые 2 минуты для заведения заявок из колоник в bitrix.
    * Если что это взаимодействие с api, которое доступно только внутри сайта eissd.
@@ -277,10 +274,9 @@ export class EissdService implements OnModuleInit {
     let dateNow = currentDate.toISOString();
     dateNow = dateNow.slice(0, 19) + '+00:00';
 
-    console.log('address: ', address);
     // Получаем данные от DaData
     const infoDadata = await this.dadataService.addressCheck(address);
-    console.log('infoDadata: ', infoDadata);
+
     if (!infoDadata) {
       throw new Error('Ошибка в получении информации от DaData');
     }
@@ -450,8 +446,7 @@ export class EissdService implements OnModuleInit {
 
       return response.data.result.id; // Возвращаем данные ответа
     } catch (error) {
-      console.error('Ошибка при выполнении запроса:', error);
-      throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
+      throw new Error('Ошибка в получении id организации: ' + error.message);
     }
   }
   // Получение мрф тарифов
@@ -515,8 +510,7 @@ export class EissdService implements OnModuleInit {
 
       return result; // Возвращаем данные ответа
     } catch (error) {
-      console.error('Ошибка при выполнении запроса:', error);
-      throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
+      throw new Error('Ошибка в получении SHPD MRF тарифа: ' + error.message);
     }
   }
   /**
@@ -579,8 +573,7 @@ export class EissdService implements OnModuleInit {
 
       return result; // Возвращаем данные ответа
     } catch (error) {
-      console.error('Ошибка при выполнении запроса:', error);
-      throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
+      throw new Error('Ошибка в получении IPTV MRF тарифа: ' + error.message);
     }
   }
   // Получение тарифов
@@ -634,8 +627,7 @@ export class EissdService implements OnModuleInit {
 
       return result; // Возвращаем данные ответа
     } catch (error) {
-      console.error('Ошибка при выполнении запроса:', error);
-      throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
+      throw new Error('Ошибка в получении SHPD тарифа: ' + error.message);
     }
   }
   /**
@@ -688,8 +680,7 @@ export class EissdService implements OnModuleInit {
 
       return result; // Возвращаем данные ответа
     } catch (error) {
-      console.error('Ошибка при выполнении запроса:', error);
-      throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
+      throw new Error('Ошибка в получении IPTV тарифа: ' + error.message);
     }
   }
   // Получение опций для тарифа
@@ -743,8 +734,7 @@ export class EissdService implements OnModuleInit {
 
       return null;
     } catch (error) {
-      console.error('Ошибка при выполнении запроса:', error);
-      throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
+      throw new Error('Ошибка в получении SHPD опции тарифа: ' + error.message);
     }
   }
   /**
@@ -799,8 +789,7 @@ export class EissdService implements OnModuleInit {
 
       return null;
     } catch (error) {
-      console.error('Ошибка при выполнении запроса:', error);
-      throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
+      throw new Error('Ошибка в получении IPTV опции тарифа: ' + error.message);
     }
   }
   // Получение симки
@@ -929,8 +918,7 @@ export class EissdService implements OnModuleInit {
 
       return result;
     } catch (error) {
-      console.error('Ошибка при выполнении запроса:', error);
-      throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
+      throw new Error('Ошибка в получении симки: ' + error.message);
     }
   }
   // Создание и отправка заявки
@@ -1045,15 +1033,9 @@ export class EissdService implements OnModuleInit {
         },
       });
 
-      if (response.data?.errorCode == 401 || response.data?.errorCode == 400) {
-        this.sessionId = await this.authEissd();
-        return null;
-      }
-
       return response.data; // Возвращаем данные ответа
     } catch (error) {
-      console.error('Ошибка при выполнении запроса:', error);
-      throw new Error(error instanceof Error ? error.message : 'Неизвестная ошибка');
+      throw new Error('Ошибка при отправке запроса: ' + error.message);
     }
   }
   // Побочные функции
@@ -1064,50 +1046,54 @@ export class EissdService implements OnModuleInit {
    * @returns {Promise<string>} Возвращает данные.
    */
   private async sendXMLRequest(body: string): Promise<string> {
-    // Загрузка сертификата и ключа
-    const cert = fs.readFileSync(this.pathCertProduct);
-    const key = fs.readFileSync(this.pathKeyProduct);
+    try {
+      // Загрузка сертификата и ключа
+      const cert = fs.readFileSync(this.pathCertProduct);
+      const key = fs.readFileSync(this.pathKeyProduct);
 
-    const options: https.RequestOptions = {
-      hostname: 'mpz.rt.ru', // Ваш хост
-      port: 443,
-      path: '/xmlInteface', // Путь к API
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/xml',
-      },
-      key: key,
-      cert: cert,
-      rejectUnauthorized: false, // Отключение проверки сертификатов, если это необходимо
-    };
+      const options: https.RequestOptions = {
+        hostname: 'mpz.rt.ru', // Ваш хост
+        port: 443,
+        path: '/xmlInteface', // Путь к API
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/xml',
+        },
+        key: key,
+        cert: cert,
+        rejectUnauthorized: false, // Отключение проверки сертификатов, если это необходимо
+      };
 
-    return new Promise((resolve, reject) => {
-      const req = https.request(options, (res) => {
-        let data = '';
+      return new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+          let data = '';
 
-        // Чтение данных из ответа
-        res.on('data', (chunk) => {
-          data += chunk;
+          // Чтение данных из ответа
+          res.on('data', (chunk) => {
+            data += chunk;
+          });
+
+          // Завершаем и возвращаем данные
+          res.on('end', () => {
+            resolve(data);
+          });
         });
 
-        // Завершаем и возвращаем данные
-        res.on('end', () => {
-          resolve(data);
+        // Обработка ошибок
+        req.on('error', (error) => {
+          console.error('Error during request:', error);
+          reject(error);
         });
+
+        // Отправка тела запроса
+        req.write(body);
+
+        // Завершаем запрос
+        req.end();
       });
-
-      // Обработка ошибок
-      req.on('error', (error) => {
-        console.error('Error during request:', error);
-        reject(error);
-      });
-
-      // Отправка тела запроса
-      req.write(body);
-
-      // Завершаем запрос
-      req.end();
-    });
+    } catch (error) {
+      throw new Error('Ошибка при отправке xml запроса: ' + error.message);
+    }
   }
   /**
    * Функция для парсинга XML-ответа.
@@ -1128,8 +1114,7 @@ export class EissdService implements OnModuleInit {
 
       return result;
     } catch (error) {
-      console.error('Error parsing XML:', error);
-      throw error; // Выбрасываем ошибку, если XML не удается распарсить
+      throw new Error('Ошибка при парсинге xml ответа: ' + error.message);
     }
   }
   /**
@@ -1139,20 +1124,24 @@ export class EissdService implements OnModuleInit {
    * @returns {Promise<string>} - Возвращает корректный номер.
    */
   async validatePhoneNumber(input: string): Promise<string | null> {
-    // Удаляем все пробелы, знаки `+`, `-`, `(`, `)` из номера
-    const cleaned = input.replace(/[+\-\s()]/g, '');
+    try {
+      // Удаляем все пробелы, знаки `+`, `-`, `(`, `)` из номера
+      const cleaned = input.replace(/[+\-\s()]/g, '');
 
-    // Если номер начинается с 7 или 8 и имеет длину 11
-    if ((cleaned.startsWith('7') || cleaned.startsWith('8')) && cleaned.length === 11) {
-      return cleaned.slice(1); // Убираем первую цифру
+      // Если номер начинается с 7 или 8 и имеет длину 11
+      if ((cleaned.startsWith('7') || cleaned.startsWith('8')) && cleaned.length === 11) {
+        return cleaned.slice(1); // Убираем первую цифру
+      }
+
+      // Если номер уже состоит из 10 цифр
+      if (cleaned.length === 10) {
+        return cleaned;
+      }
+
+      // Если номер не подходит по формату
+      return null;
+    } catch (error) {
+      throw new Error('Ошибка при валидации номера: ' + error.message);
     }
-
-    // Если номер уже состоит из 10 цифр
-    if (cleaned.length === 10) {
-      return cleaned;
-    }
-
-    // Если номер не подходит по формату
-    return null;
   }
 }

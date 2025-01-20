@@ -23,9 +23,9 @@ export class ScheduleService {
   }
 
   async addActiveDay(initData: string, date: string, startWorkTime: string, endWorkTime: string, office: boolean) {
-    const { user } = await this.parseInitData(initData);
+    // const { user } = await this.parseInitDataToObject(initData);
     return this.employeeScheduleRepository.addActiveDay({
-      user_id: user.id,
+      user_id: 625835890,
       date: date,
       start_time: startWorkTime,
       end_time: endWorkTime,
@@ -34,11 +34,15 @@ export class ScheduleService {
     });
   }
 
+  async deleteActiveDay(id: number) {
+    return this.employeeScheduleRepository.delActiveDay(id);
+  }
+
   async editStatusActiveDay(id: number, status: string) {
     return this.employeeScheduleRepository.editStatusActiveDay(id, status);
   }
 
-  async parseInitData(initData: string): Promise<InitDataObject> {
+  async parseInitDataToObject(initData: string): Promise<InitDataObject> {
     try {
       const parsedData: Record<string, string> = Object.fromEntries(new URLSearchParams(initData));
 
@@ -57,19 +61,18 @@ export class ScheduleService {
     }
   }
 
+  /**
+   * Проверяет валидность подписи данных от Telegram WebApp
+   *
+   * Источник:
+   * https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
+   *
+   * @param initData Данные, полученные от WebApp
+   * @returns true, если подпись валидна, иначе user
+   */
   async checkWebAppSignature(initData: string): Promise<boolean> {
-    /**
-     * Проверяет валидность подписи данных от Telegram WebApp
-     *
-     * Источник:
-     * https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
-     *
-     * @param initData Данные, полученные от WebApp
-     * @returns true, если подпись валидна, иначе user
-     */
     try {
-      const parsedData = await this.parseInitData(initData);
-      console.log(parsedData);
+      const parsedData = Object.fromEntries(new URLSearchParams(initData));
       const token = this.configService.get<string>('TG_API_KEY');
       if (!parsedData.hash) {
         // Хэш отсутствует в данных
@@ -101,10 +104,12 @@ export class ScheduleService {
 
   async getActiveDays(filters: GetScheduleValidation): Promise<any> {
     const { office, status, startDate, endDate } = filters;
-    // const { user } = await this.parseInitData(filters.initData);
-    const idEmployee = 625835890;
+
+    // const { user } = await this.parseInitDataToObject(initData);
+    // const idEmployee = user.id;
+
     return this.employeeScheduleRepository.getActiveDays({
-      idEmployee,
+      idEmployee: 625835890,
       office,
       status,
       startDate,

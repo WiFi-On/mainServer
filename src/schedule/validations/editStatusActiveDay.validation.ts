@@ -6,7 +6,7 @@ export class EditStatusActiveDayValidation {
     description: 'Хук для изменения статуса рабочих дней от сотрудников',
   })
   @IsString()
-  @IsNotEmpty({ message: 'Данные для авторизации не могут быть пустыми.' })
+  // @IsNotEmpty({ message: 'Данные для авторизации не могут быть пустыми.' })
   initData: string;
 
   @IsInt()

@@ -1,14 +1,10 @@
 import { IsNotEmpty, IsString, IsBoolean, Matches } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 import { IsStartTimeBeforeEndTime } from './custom/StartTimeBeforeEndTime';
 import { IsDateNotBeforeToday } from './custom/DateNotBeforeToday';
 
 export class AddActiveDayValidation {
-  @ApiProperty({
-    description: 'Хук для заведения рабочих дней от сотрудников',
-  })
   @IsString()
-  @IsNotEmpty({ message: 'Данные для авторизации не могут быть пустыми.' })
+  // @IsNotEmpty({ message: 'Данные для авторизации не могут быть пустыми.' })
   initData: string;
 
   @IsString()
