@@ -53,7 +53,7 @@ async function bootstrap() {
   } else {
     app.enableCors({
       origin: (origin, callback) => {
-        const allowedOrigins = ['*', 'http://localhost:3000', 'https://on-wifi.ru'];
+        const allowedOrigins = ['*', 'http://localhost:3000', 'https://on-wifi.ru', 'https://workworkhellobot.ru'];
         if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
           callback(null, true);
         } else {
