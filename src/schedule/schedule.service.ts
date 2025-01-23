@@ -1,13 +1,16 @@
+// nest
 import { Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-
+// utils
+import * as crypto from 'crypto';
+// repo
 import { ScheduleUsersRepository } from '../db1/repositories/schedule_users.repository';
 import { EmployeeScheduleRepository } from 'src/db1/repositories/employee_schedule.repository';
-
-import { ScheduleUser } from '../db1/entities/schedule_user.entity';
-import { GetScheduleValidation } from './validations/getSchedule.validation';
-import * as crypto from 'crypto';
-
+//dtos
+import { GetScheduleDto } from './dtos/getSchedule.dto';
+import { EditActiveDayDto } from './dtos/editActiveDay.dto';
+import { EditStatusActiveDayDto } from './dtos/editStatusActiveDay.dto';
+// interfaces
 import InitDataObject from './interfaces/initDataObject.interface';
 
 @Injectable()
@@ -18,14 +21,30 @@ export class ScheduleService {
     @Inject(ConfigService) private readonly configService: ConfigService,
   ) {}
 
-  async isUserExist(telegramId: number): Promise<ScheduleUser | null> {
-    return this.scheduleUsersRepository.isUserExist(telegramId);
+  async isUserExist(initData: string): Promise<boolean> {
+    const initDataObject = await this.parseInitDataToObject(initData);
+    const telegramId = initDataObject.user.id;
+    const result = this.scheduleUsersRepository.isUserExist(telegramId);
+
+    return !!result;
+  }
+
+  async isAdmin(initData: string): Promise<boolean> {
+    try {
+      const initDataObject = await this.parseInitDataToObject(initData);
+      const telegramId = initDataObject.user.id;
+      const result = await this.scheduleUsersRepository.isUserExist(telegramId);
+
+      return result.admin;
+    } catch (error) {
+      throw new Error('Ошибка при проверке админа: ' + error.message);
+    }
   }
 
   async addActiveDay(initData: string, date: string, startWorkTime: string, endWorkTime: string, office: boolean) {
-    // const { user } = await this.parseInitDataToObject(initData);
+    const { user } = await this.parseInitDataToObject(initData);
     return this.employeeScheduleRepository.addActiveDay({
-      user_id: 625835890,
+      user_id: user.id,
       date: date,
       start_time: startWorkTime,
       end_time: endWorkTime,
@@ -38,7 +57,20 @@ export class ScheduleService {
     return this.employeeScheduleRepository.delActiveDay(id);
   }
 
-  async editStatusActiveDay(id: number, status: string) {
+  async checkUserActiveDayId(idActiveDay: number, initData: string): Promise<boolean> {
+    const { user } = await this.parseInitDataToObject(initData);
+    const object = await this.employeeScheduleRepository.getUserIdByTelegramId(user.id);
+
+    return user.id === object.user_id;
+  }
+
+  async editWorkDay(dto: EditActiveDayDto) {
+    const { id, startTime, endTime, officeWork } = dto;
+    return this.employeeScheduleRepository.editActiveDay(id, startTime, endTime, officeWork);
+  }
+
+  async editStatusWorkDay(dto: EditStatusActiveDayDto) {
+    const { id, status } = dto;
     return this.employeeScheduleRepository.editStatusActiveDay(id, status);
   }
 
@@ -102,18 +134,33 @@ export class ScheduleService {
     }
   }
 
-  async getActiveDays(filters: GetScheduleValidation): Promise<any> {
-    const { office, status, startDate, endDate } = filters;
+  async getActiveDays(filters: GetScheduleDto): Promise<any> {
+    const { office, status, startDate, endDate, dateObject } = filters;
 
     // const { user } = await this.parseInitDataToObject(initData);
     // const idEmployee = user.id;
 
-    return this.employeeScheduleRepository.getActiveDays({
+    const result = await this.employeeScheduleRepository.getActiveDays({
       idEmployee: 625835890,
       office,
       status,
       startDate,
       endDate,
     });
+
+    if (dateObject) {
+      const groupedByDate = result.reduce((acc, schedule) => {
+        const date = schedule.date;
+        if (!acc[date]) {
+          acc[date] = [];
+        }
+        acc[date].push(schedule);
+        return acc;
+      }, {});
+
+      return groupedByDate;
+    }
+
+    return result;
   }
 }

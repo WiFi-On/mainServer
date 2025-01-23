@@ -1,27 +1,26 @@
 // nest
-import { Body, Controller, Post, NotFoundException, HttpException, Get, Query, Delete } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Post, HttpException, Get, Query, Delete, Put, UseGuards } from '@nestjs/common';
 // Validations
-import { AddActiveDayValidation } from './validations/active_days.validation';
-import { CheckInitDataValidation } from './validations/checkInitData.validation';
-import { EditStatusActiveDayValidation } from './validations/editStatusActiveDay.validation';
-import { GetScheduleValidation } from './validations/getSchedule.validation';
-import { DeleteActiveDayValidation } from './validations/deleteActiveDay.validation';
+import { AddActiveDayDto } from './dtos/active_days.dto';
+import { EditActiveDayDto } from './dtos/editActiveDay.dto';
+import { GetScheduleDto } from './dtos/getSchedule.dto';
+import { DeleteActiveDayDto } from './dtos/deleteActiveDay.dto';
+import { EditStatusActiveDayDto } from './dtos/editStatusActiveDay.dto';
+import { CheckInitDataDto } from './dtos/checkInitData.dto';
 // ...
 import { ScheduleService } from './schedule.service';
-import { ScheduleUser } from '../db1/entities/schedule_user.entity';
 import scheduleInterface from './interfaces/schedule.interface';
+import { Admin } from './guards/Admin.guard';
+import { WebAppSignature } from './guards/WebAppSignature.guard';
+import { CheckUserPermission } from './guards/CheckUserPermission.guard';
 
-@ApiTags('Schedule')
 @Controller('api/v1/schedule')
 export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
+  @UseGuards(WebAppSignature)
   @Get()
-  async getSchedule(@Query() query: GetScheduleValidation): Promise<scheduleInterface> {
-    // if (!(await this.scheduleService.checkWebAppSignature(query.initData))) {
-    //   throw new HttpException('Unauthorized', 401);
-    // }
+  async getSchedule(@Query() query: GetScheduleDto): Promise<scheduleInterface> {
     try {
       return this.scheduleService.getActiveDays(query);
     } catch (error) {
@@ -29,40 +28,35 @@ export class ScheduleController {
     }
   }
 
-  @ApiOperation({ summary: 'Проверка существования пользователя по телеграмм айди.' })
   @Post('checkUser')
   async checkUser(
-    @Body() body: { telegramId: number }, // Получаем telegramId из тела запроса
-  ): Promise<ScheduleUser> {
-    // Проверка существования пользователя по telegramId
-    const user = await this.scheduleService.isUserExist(body.telegramId);
+    @Body() body: CheckInitDataDto, // Получаем telegramId из тела запроса
+  ): Promise<{ result: string | null }> {
+    try {
+      const result = await this.scheduleService.isUserExist(body.initData);
+      const role = result ? ((await this.scheduleService.isAdmin(body.initData)) ? 'admin' : 'user') : null;
 
-    if (user) {
-      return user;
-    } else {
-      throw new NotFoundException('User not found'); // Если пользователь не найден, выбрасываем ошибку
+      return { result: role };
+    } catch (error) {
+      throw new HttpException('Error server: ' + error.message, 500);
     }
   }
 
-  @Post('addWorkDay')
-  async addActiveDay(@Body() body: AddActiveDayValidation): Promise<any> {
-    // if (!(await this.scheduleService.checkWebAppSignature(body.initData))) {
-    //   throw new HttpException('Unauthorized', 401);
-    // }
+  @UseGuards(WebAppSignature)
+  @Post('add/WorkDay')
+  async addActiveDay(@Body() body: AddActiveDayDto): Promise<any> {
     try {
-      const activeDay = await this.scheduleService.addActiveDay(body.initData, body.date, body.startTime, body.endTime, body.officeWork);
-      console.log(activeDay);
+      const initData = Headers['x-init-data'];
+      const activeDay = await this.scheduleService.addActiveDay(initData, body.date, body.startTime, body.endTime, body.officeWork);
       return activeDay;
     } catch (error) {
       throw new HttpException('Error server: ' + error.message, 500);
     }
   }
 
-  @Delete('deleteWorkDay')
-  async delActiveDay(@Body() body: DeleteActiveDayValidation): Promise<any> {
-    // if (!(await this.scheduleService.checkWebAppSignature(body.initData))) {
-    //   throw new HttpException('Unauthorized', 401);
-    // }
+  @UseGuards(WebAppSignature, CheckUserPermission)
+  @Delete('delete/WorkDay')
+  async delActiveDay(@Body() body: DeleteActiveDayDto): Promise<any> {
     try {
       const result = await this.scheduleService.deleteActiveDay(body.id);
       return result;
@@ -71,34 +65,23 @@ export class ScheduleController {
     }
   }
 
-  // @Post('editWorkDay')
-  // async editActiveDay(@Body() body: AddActiveDayValidation): Promise<any> {
-  //   // if (!(await this.scheduleService.checkWebAppSignature(body.initData))) {
-  //   //   throw new HttpException('Unauthorized', 401);
-  //   // }
-  //   try {
-  //     const activeDay = await this.scheduleService.editActiveDay(body.id, body.date, body.startTime, body.endTime, body.officeWork);
-  //     return activeDay;
-  //   } catch (error) {
-  //     throw new HttpException('Error server: ' + error.message, 500);
-  //   }
-  // }
-
-  @Post('checkInitData')
-  async checkInitData(@Body() body: CheckInitDataValidation): Promise<{ result: boolean }> {
+  @UseGuards(WebAppSignature, CheckUserPermission)
+  @Put('update/WorkDay')
+  async editWorkDay(@Body() body: EditActiveDayDto): Promise<any> {
     try {
-      const isValid = await this.scheduleService.checkWebAppSignature(body.initData);
-      return { result: isValid };
+      const activeDay = await this.scheduleService.editWorkDay(body);
+      return activeDay;
     } catch (error) {
-      // Логирование ошибки, если нужно
       throw new HttpException('Error server: ' + error.message, 500);
     }
   }
 
-  @Post('editStatusActiveDay')
-  async editStatusActiveDay(@Body() body: EditStatusActiveDayValidation): Promise<any> {
+  @UseGuards(Admin, WebAppSignature)
+  @Put('update/statusWorkDay')
+  async editStatusWorkDay(@Body() body: EditStatusActiveDayDto): Promise<any> {
     try {
-      return this.scheduleService.editStatusActiveDay(body.id, body.status);
+      const activeDay = await this.scheduleService.editStatusWorkDay(body);
+      return activeDay;
     } catch (error) {
       throw new HttpException('Error server: ' + error.message, 500);
     }

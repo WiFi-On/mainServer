@@ -18,6 +18,9 @@ export class EmployeeScheduleRepository {
   async editStatusActiveDay(id: number, status: string): Promise<any> {
     return await this.activeDayRepository.update({ id }, { status });
   }
+  async editActiveDay(id: number, startTime?: string, endTime?: string, office?: boolean): Promise<any> {
+    return await this.activeDayRepository.update({ id }, { start_time: startTime, end_time: endTime, office });
+  }
   async getActiveDays(filters: { idEmployee?: number; office?: boolean; status?: string; startDate?: string; endDate?: string }): Promise<any> {
     const queryBuilder = this.activeDayRepository.createQueryBuilder('schedule');
 
@@ -54,5 +57,8 @@ export class EmployeeScheduleRepository {
   }
   async delActiveDay(id: number): Promise<any> {
     return await this.activeDayRepository.delete({ id });
+  }
+  async getUserIdByTelegramId(telegramId: number): Promise<EmployeeSchedule> {
+    return await this.activeDayRepository.findOne({ where: { user_id: telegramId } });
   }
 }

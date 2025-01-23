@@ -1,12 +1,8 @@
 import { IsNotEmpty, IsString, IsBoolean, Matches } from 'class-validator';
-import { IsStartTimeBeforeEndTime } from './custom/StartTimeBeforeEndTime';
-import { IsDateNotBeforeToday } from './custom/DateNotBeforeToday';
+import { IsStartTimeBeforeEndTime } from './validations/StartTimeBeforeEndTime.validation';
+import { IsDateNotBeforeToday } from './validations/DateNotBeforeToday.validation';
 
-export class AddActiveDayValidation {
-  @IsString()
-  // @IsNotEmpty({ message: 'Данные для авторизации не могут быть пустыми.' })
-  initData: string;
-
+export class AddActiveDayDto {
   @IsString()
   @IsNotEmpty({ message: 'Дата работы не может быть пустой.' })
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Дата работы должна быть в формате "ГГГГ-ММ-ДД".' })

@@ -1,9 +1,6 @@
-import { IsOptional, IsString, IsIn, IsBoolean, Matches } from 'class-validator';
+import { IsOptional, IsString, IsIn, IsBoolean, Matches, IsBooleanString } from 'class-validator';
 
-export class GetScheduleValidation {
-  @IsString()
-  initData: string;
-
+export class GetScheduleDto {
   @IsOptional()
   @IsBoolean()
   office?: boolean;
@@ -22,4 +19,8 @@ export class GetScheduleValidation {
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Дата работы должна быть в формате "ГГГГ-ММ-ДД".' })
   @IsString()
   endDate?: string;
+
+  @IsOptional()
+  @IsBooleanString()
+  dateObject?: boolean;
 }

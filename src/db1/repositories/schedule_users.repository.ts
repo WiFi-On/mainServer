@@ -12,12 +12,10 @@ export class ScheduleUsersRepository {
   ) {}
 
   async isUserExist(telegramId: number): Promise<ScheduleUser | null> {
-    console.log(telegramId);
     const user = await this.scheduleUserRepository.findOne({
       where: { telegram_id: telegramId }, // Убедитесь, что передаете правильный параметр
     });
 
-    console.log(user);
     return user || null; // Если пользователь не найден, возвращается null
   }
 }
