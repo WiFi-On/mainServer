@@ -1,5 +1,5 @@
 // nest
-import { Body, Controller, Post, HttpException, Get, Query, Delete, Put, UseGuards } from '@nestjs/common';
+import { Body, Headers, Controller, Post, HttpException, Get, Query, Delete, Put, UseGuards } from '@nestjs/common';
 // Validations
 import { AddActiveDayDto } from './dtos/active_days.dto';
 import { EditActiveDayDto } from './dtos/editActiveDay.dto';
@@ -20,9 +20,8 @@ export class ScheduleController {
 
   @UseGuards(WebAppSignature)
   @Get()
-  async getSchedule(@Query() query: GetScheduleDto): Promise<scheduleInterface> {
+  async getSchedule(@Query() query: GetScheduleDto, @Headers('x-init-data') initData: string): Promise<scheduleInterface> {
     try {
-      const initData = Headers['x-init-data'];
       return this.scheduleService.getActiveDays(initData, query);
     } catch (error) {
       throw new HttpException('Error server: ' + error.message, 500);
@@ -45,9 +44,8 @@ export class ScheduleController {
 
   @UseGuards(WebAppSignature)
   @Post('add/WorkDay')
-  async addActiveDay(@Body() body: AddActiveDayDto): Promise<any> {
+  async addActiveDay(@Body() body: AddActiveDayDto, @Headers('x-init-data') initData: string): Promise<any> {
     try {
-      const initData = Headers['x-init-data'];
       const activeDay = await this.scheduleService.addActiveDay(initData, body.date, body.startTime, body.endTime, body.officeWork);
       return activeDay;
     } catch (error) {
