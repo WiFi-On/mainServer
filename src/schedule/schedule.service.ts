@@ -129,8 +129,7 @@ export class ScheduleService {
 
       return receivedHash === calculatedHash;
     } catch (error) {
-      console.error('Ошибка при разборе initData:', error);
-      return false;
+      throw new Error('Ошибка при проверке InitData: ' + error.message);
     }
   }
 

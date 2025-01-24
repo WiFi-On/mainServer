@@ -36,8 +36,6 @@ export class ScheduleController {
       const result = await this.scheduleService.isUserExist(body.initData);
       const role = result ? ((await this.scheduleService.isAdmin(body.initData)) ? 'admin' : 'user') : null;
 
-      console.log(role);
-
       return { result: role };
     } catch (error) {
       throw new HttpException('Error server: ' + error.message, 500);
