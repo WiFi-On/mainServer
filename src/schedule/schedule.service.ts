@@ -133,21 +133,30 @@ export class ScheduleService {
     }
   }
 
-  async getActiveDays(filters: GetScheduleDto): Promise<any> {
+  async getActiveDays(initData: string, filters: GetScheduleDto): Promise<any> {
     const { office, status, startDate, endDate, dateObject } = filters;
 
-    // const { user } = await this.parseInitDataToObject(initData);
-    // const idEmployee = user.id;
+    if (!dateObject) {
+      const { user } = await this.parseInitDataToObject(initData);
+      const idEmployee = user.id;
 
-    const result = await this.employeeScheduleRepository.getActiveDays({
-      idEmployee: 625835890,
-      office,
-      status,
-      startDate,
-      endDate,
-    });
+      const result = await this.employeeScheduleRepository.getActiveDays({
+        idEmployee,
+        office,
+        status,
+        startDate,
+        endDate,
+      });
 
-    if (dateObject) {
+      return result;
+    } else {
+      const result = await this.employeeScheduleRepository.getActiveDays({
+        office,
+        status,
+        startDate,
+        endDate,
+      });
+
       const groupedByDate = result.reduce((acc, schedule) => {
         const date = schedule.date;
         if (!acc[date]) {
@@ -159,7 +168,5 @@ export class ScheduleService {
 
       return groupedByDate;
     }
-
-    return result;
   }
 }

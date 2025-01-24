@@ -22,7 +22,8 @@ export class ScheduleController {
   @Get()
   async getSchedule(@Query() query: GetScheduleDto): Promise<scheduleInterface> {
     try {
-      return this.scheduleService.getActiveDays(query);
+      const initData = Headers['x-init-data'];
+      return this.scheduleService.getActiveDays(initData, query);
     } catch (error) {
       throw new HttpException('Error server: ' + error.message, 500);
     }
