@@ -16,7 +16,7 @@ import { DadataService } from '../dadata/dadata.service';
 import { DistrictRepository } from '../db2/repositories/districts.repository';
 import { StreetRepository } from '../db2/repositories/streets.repository';
 import { HouseRepository } from '../db2/repositories/houses.repository';
-import { ResultThvEissdI } from '../eissd/interfaces';
+import { ResultThvEissdI, ReturnDataConnectionPosI } from './interfaces/thv.interface';
 import { BitrixService } from '../bitrix/bitrix.service';
 import tariffMrfI from './interfaces/tariffMrf.interface';
 import tariffI from './interfaces/tariff.interface';
@@ -32,6 +32,7 @@ export class EissdService implements OnModuleInit {
   private readonly pathCertDev: string;
   private readonly enviroment: string;
   private readonly mrfRegionList: string[];
+  private readonly techId: { [key: string]: string };
   private sessionId: string;
   constructor(
     @Inject(ConfigService) private readonly configService: ConfigService,
@@ -78,6 +79,13 @@ export class EissdService implements OnModuleInit {
       '45',
       '39',
     ];
+    this.techId = {
+      'БШПД (WBA)': '10063',
+      PSTN: '10044',
+      PON: '10037',
+      FTTx: '10036',
+      xDSL: '10035',
+    };
   }
   /**
    * Функция запускается при инициализации модуля. Нужно для получения куки файла сессии, что бы в дальнейшем можно было использовать нужные ручки.
@@ -100,25 +108,26 @@ export class EissdService implements OnModuleInit {
   async main(): Promise<void> {
     if (this.enviroment === 'prod') {
       const leadsBitrixRtk = await this.bitrixService.getDealsOnProviders(52);
-      if (!leadsBitrixRtk.length) {
-        this.logger.error(`Лидов нет || PATH: eissd/main`);
-        return;
-      }
       for (const lead of leadsBitrixRtk) {
-        const thv = await this.checkTHV(lead.address);
-        if (thv.result.thv) {
-          const application = await this.formingApplication(lead.number, lead.fio, thv);
-          if (application.err) {
-            this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
-            this.bitrixService.moveToError(lead.id, application.result);
-            continue;
-          } else if (!application.err && application.result.includes('Заявка назначена')) {
-            this.logger.log(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${application.result}`);
-            this.bitrixService.moveToAppointed(lead.id, application.result);
+        try {
+          const thv = await this.checkTHV(lead.address);
+          if (thv.result.thv) {
+            const application = await this.formingApplication(lead.number, lead.fio, thv);
+            if (application.err) {
+              this.logger.error('Заявка не заведена', { address: lead.address, path: 'eissd/main', result: application.result });
+              this.bitrixService.moveToError(lead.id, application.result);
+              continue;
+            } else if (!application.err && application.result.includes('Заявка назначена')) {
+              this.logger.log('Заявка назначена', { address: lead.address, path: 'eissd/main', result: application.result });
+              this.bitrixService.moveToAppointed(lead.id, application.result);
+            }
+          } else {
+            this.logger.error('Нужно проверить тхв вручную', { address: lead.address, path: 'eissd/main', result: thv.result.thv });
+            this.bitrixService.moveToError(lead.id, 'проверка ТХВ');
           }
-        } else {
-          this.logger.error(`ADDRESS: ${lead.address} ||  PATH: eissd/main || RESULT: ${thv.result.thv}`);
-          this.bitrixService.moveToError(lead.id, 'проверка ТХВ');
+        } catch (error) {
+          this.logger.error('Ошибка при заведении заявки', { address: lead.address, path: 'eissd/main', result: error });
+          this.bitrixService.moveToError(lead.id, error);
         }
       }
     }
@@ -145,13 +154,9 @@ export class EissdService implements OnModuleInit {
    * @returns {Promise<BitrixReturnData>} Данные, возвращаемые системой Bitrix24 при успешном создании контакта.
    */
   async formingApplication(number: string, fio: string, thv: ResultThvEissdI): Promise<{ err: boolean; result: string }> {
-    thv.result = { TechName: 'xDSL', Res: 'Y', TechId: '10035', thv: true };
-
     try {
       const orgId = await this.getOrgId(thv.infoAddress.regionId);
-      if (!orgId) {
-        return { err: true, result: 'Айди организации не найден' };
-      }
+
       // Получение тарифов
       let shpd: any, iptv: any;
       if (this.mrfRegionList.includes(thv.infoAddress.regionId)) {
@@ -218,7 +223,7 @@ export class EissdService implements OnModuleInit {
         };
       }
     } catch (error) {
-      return { err: true, result: error.message };
+      throw Error(error);
     }
   }
   /**
@@ -246,8 +251,7 @@ export class EissdService implements OnModuleInit {
 
       return sessionId;
     } catch (error) {
-      console.error('Error during authentication:', error);
-      throw error;
+      throw 'Ошибка в авторизации в Eissd: ' + error.message;
     }
   }
   /**
@@ -262,13 +266,6 @@ export class EissdService implements OnModuleInit {
    * @returns {Promise<ResultThvEissdIing>} Возвращает данные по технической возможности и информацию о адресе.
    */
   async checkTHV(address: string): Promise<ResultThvEissdI> {
-    const techId = {
-      'БШПД (WBA)': '10063',
-      PSTN: '10044',
-      PON: '10037',
-      FTTx: '10036',
-      xDSL: '10035',
-    };
     // Получаем текущую дату
     const currentDate = new Date();
     let dateNow = currentDate.toISOString();
@@ -283,66 +280,91 @@ export class EissdService implements OnModuleInit {
     const infoAddressDadata = infoDadata.suggestions[0].data;
     const regionId = infoAddressDadata.region_kladr_id.slice(0, 2);
 
-    // Проверка и извлечение ID района (district)
+    // Получение населенного пунтка
     let idDistrict = 0;
     let districtFiasId = '';
     let districtName = '';
     let districtObject = '';
-    // Получение населенного пунтка
-    if (infoAddressDadata.area && infoAddressDadata.city) {
-      const areaId = await this.districtRepository.getDistrictIDByRegionAndName(regionId, infoAddressDadata.area, infoAddressDadata.area_type);
-      const cityId = await this.districtRepository.getDistrictIDByParentIDandName(areaId, infoAddressDadata.city, infoAddressDadata.city_type);
 
-      idDistrict = cityId;
-      districtFiasId = infoAddressDadata.city_fias_id;
-      districtName = infoAddressDadata.city;
-      districtObject = infoAddressDadata.city_type;
-    }
-    if (!idDistrict && infoAddressDadata.city && infoAddressDadata.settlement) {
-      const cityId = await this.districtRepository.getDistrictIDByRegionAndName(regionId, infoAddressDadata.city, infoAddressDadata.city_type);
-      const settlementId = await this.districtRepository.getDistrictIDByParentIDandName(cityId, infoAddressDadata.settlement, infoAddressDadata.settlement_type);
+    try {
+      if (infoAddressDadata.area && infoAddressDadata.city) {
+        const areaId = await this.districtRepository.getDistrictIDByRegionAndName(regionId, infoAddressDadata.area, infoAddressDadata.area_type);
+        const cityId = await this.districtRepository.getDistrictIDByParentIDandName(areaId, infoAddressDadata.city, infoAddressDadata.city_type);
 
-      idDistrict = settlementId;
-      districtFiasId = infoAddressDadata.settlement_fias_id;
-      districtName = infoAddressDadata.settlement;
-      districtObject = infoAddressDadata.settlement_type;
-    }
-    if (!idDistrict && infoAddressDadata.area && infoAddressDadata.settlement) {
-      const areaId = await this.districtRepository.getDistrictIDByRegionAndName(regionId, infoAddressDadata.area, infoAddressDadata.area_type);
-      const settlementId = await this.districtRepository.getDistrictIDByParentIDandName(areaId, infoAddressDadata.settlement, infoAddressDadata.settlement_type);
+        idDistrict = cityId;
+        districtFiasId = infoAddressDadata.city_fias_id;
+        districtName = infoAddressDadata.city;
+        districtObject = infoAddressDadata.city_type;
+      }
+      if (!idDistrict && infoAddressDadata.city && infoAddressDadata.settlement) {
+        const cityId = await this.districtRepository.getDistrictIDByRegionAndName(regionId, infoAddressDadata.city, infoAddressDadata.city_type);
+        const settlementId = await this.districtRepository.getDistrictIDByParentIDandName(cityId, infoAddressDadata.settlement, infoAddressDadata.settlement_type);
 
-      idDistrict = settlementId;
-      districtFiasId = infoAddressDadata.settlement_fias_id;
-      districtName = infoAddressDadata.settlement;
-      districtObject = infoAddressDadata.settlement_type;
-    }
-    if (!idDistrict && infoAddressDadata.city) {
-      const cityId = await this.districtRepository.getDistrictIDByRegionAndName(regionId, infoAddressDadata.city, infoAddressDadata.city_type);
+        idDistrict = settlementId;
+        districtFiasId = infoAddressDadata.settlement_fias_id;
+        districtName = infoAddressDadata.settlement;
+        districtObject = infoAddressDadata.settlement_type;
+      }
+      if (!idDistrict && infoAddressDadata.area && infoAddressDadata.settlement) {
+        const areaId = await this.districtRepository.getDistrictIDByRegionAndName(regionId, infoAddressDadata.area, infoAddressDadata.area_type);
+        const settlementId = await this.districtRepository.getDistrictIDByParentIDandName(areaId, infoAddressDadata.settlement, infoAddressDadata.settlement_type);
 
-      idDistrict = cityId;
-      districtFiasId = infoAddressDadata.city_fias_id;
-      districtName = infoAddressDadata.city;
-      districtObject = infoAddressDadata.city_type;
-    }
-    if (!idDistrict && infoAddressDadata.settlement) {
+        idDistrict = settlementId;
+        districtFiasId = infoAddressDadata.settlement_fias_id;
+        districtName = infoAddressDadata.settlement;
+        districtObject = infoAddressDadata.settlement_type;
+      }
+      if (!idDistrict && infoAddressDadata.city) {
+        const cityId = await this.districtRepository.getDistrictIDByRegionAndName(regionId, infoAddressDadata.city, infoAddressDadata.city_type);
+
+        idDistrict = cityId;
+        districtFiasId = infoAddressDadata.city_fias_id;
+        districtName = infoAddressDadata.city;
+        districtObject = infoAddressDadata.city_type;
+      }
+      if (!idDistrict && infoAddressDadata.settlement) {
+        const settlementId = await this.districtRepository.getDistrictIDByRegionAndName(regionId, infoAddressDadata.settlement, infoAddressDadata.settlement_type);
+
+        idDistrict = settlementId;
+        districtFiasId = infoAddressDadata.settlement_fias_id;
+        districtName = infoAddressDadata.settlement;
+        districtObject = infoAddressDadata.settlement_type;
+      }
+    } catch (error) {
+      throw new Error('Ошибка в получении id населенного пункта: ' + error.message);
     }
     if (!idDistrict) {
-      throw new Error('Ошибка в получении id населенного пункта');
+      throw new Error('id населенного пункта не определен');
     }
 
     // Получение айди улицы
-    const idStreet = await this.streetRepository.GetStreetIDByNameAndDistrictId(infoAddressDadata.street, idDistrict);
-    const streetName = infoAddressDadata.street;
-    const streetObject = infoAddressDadata.street_type;
+    let idStreet = 0;
+    let streetName = '';
+    let streetObject = '';
+
+    try {
+      idStreet = await this.streetRepository.GetStreetIDByNameAndDistrictId(infoAddressDadata.street, idDistrict);
+      streetName = infoAddressDadata.street;
+      streetObject = infoAddressDadata.street_type;
+    } catch (error) {
+      throw new Error('Ошибка в получении id улицы: ' + error.message);
+    }
     if (!idStreet) {
-      throw new Error('Ошибка в получении id населенного пункта');
+      throw new Error('id улицы не определен');
     }
 
     // Получение айди дома
-    const houseAndBlock = infoAddressDadata.house + (infoAddressDadata.block ? ` ${infoAddressDadata.block}` : '');
-    const idHouse = await this.houseRepository.GetStreetIDByNameAndDistrictId(houseAndBlock, idStreet);
+    let idHouse: number;
+    let houseAndBlock = '';
+
+    try {
+      houseAndBlock = infoAddressDadata.house + (infoAddressDadata.block ? ` ${infoAddressDadata.block}` : '');
+      idHouse = await this.houseRepository.GetStreetIDByNameAndDistrictId(houseAndBlock, idStreet);
+    } catch (error) {
+      throw new Error('Ошибка в получении id дома: ' + error.message);
+    }
     if (!idHouse) {
-      throw new Error('Ошибка в получении id населенного пункта');
+      throw new Error('id дома не определен');
     }
 
     // Подготовка запроса
@@ -361,60 +383,58 @@ export class EissdService implements OnModuleInit {
         </CheckConnectionPossibilityAgent>
       `;
 
+    // Отправка запроса
+    let response: string;
     try {
-      const response = await this.sendXMLRequest(requestBody);
-      const parsXml = await this.parseXmlResponse(response);
+      response = await this.sendXMLRequest(requestBody);
+    } catch (error) {
+      throw new Error('Ошибка в отправке запроса: ' + error.message);
+    }
 
+    // Парсинг ответа
+    let parsXml;
+    try {
+      parsXml = await this.parseXmlResponse(response);
+    } catch (error) {
+      throw new Error('Ошибка в парсинге ответа: ' + error.message);
+    }
+
+    // Поиск технической возможности
+    let formattedResult: ReturnDataConnectionPosI;
+    try {
       const validTechNames = ['PON', 'FTTx', 'xDSL', 'WBA', 'DOCSIS'];
       const result = parsXml.CheckConnectionPossibilityAgent[0].ConnectionPoss[0].ConnectionPos.find((pos) => {
         return validTechNames.includes(pos.TechName[0]._text[0]) && ['Y', 'U'].includes(pos.Res[0]._text[0]);
       });
-
-      const formattedResult = result
+      formattedResult = result
         ? {
             TechName: result.TechName[0]._text[0],
             Res: result.Res[0]._text[0],
-            TechId: techId[result.TechName[0]._text[0]],
+            TechId: this.techId[result.TechName[0]._text[0]],
             thv: true,
           }
         : { TechName: 'xDSL', Res: 'Y', TechId: '10035', thv: false };
-
-      return {
-        result: formattedResult,
-        districtFiasId: districtFiasId,
-        infoAddress: {
-          regionId: regionId,
-          cityId: idDistrict.toString(),
-          streetId: idStreet.toString(),
-          houseId: idHouse.toString(),
-          flat: infoAddressDadata.flat,
-          districtName: districtName,
-          districtObject: districtObject,
-          streetName: streetName,
-          streetObject: streetObject,
-          house: houseAndBlock,
-          regionFullName: infoAddressDadata.region + ' ' + infoAddressDadata.region_type_full,
-        },
-      };
-    } catch {
-      return {
-        result: { TechName: 'xDSL', Res: 'Y', TechId: '10035', thv: false },
-        districtFiasId: districtFiasId,
-        infoAddress: {
-          regionId: regionId,
-          cityId: idDistrict.toString(),
-          streetId: idStreet.toString(),
-          houseId: idHouse.toString(),
-          flat: infoAddressDadata.flat,
-          districtName: districtName,
-          districtObject: districtObject,
-          streetName: streetName,
-          streetObject: streetObject,
-          house: houseAndBlock,
-          regionFullName: infoAddressDadata.region + ' ' + infoAddressDadata.region_type_full,
-        },
-      };
+    } catch (error) {
+      throw new Error('Ошибка в проверке результата запроса на техническую возможность: ' + error.message);
     }
+
+    return {
+      result: formattedResult,
+      districtFiasId: districtFiasId,
+      infoAddress: {
+        regionId: regionId,
+        cityId: idDistrict.toString(),
+        streetId: idStreet.toString(),
+        houseId: idHouse.toString(),
+        flat: infoAddressDadata.flat,
+        districtName: districtName,
+        districtObject: districtObject,
+        streetName: streetName,
+        streetObject: streetObject,
+        house: houseAndBlock,
+        regionFullName: infoAddressDadata.region + ' ' + infoAddressDadata.region_type_full,
+      },
+    };
   }
   /**
    * Функция для получения айди организации. Потому что для каждого региона своя организация.
@@ -1035,7 +1055,7 @@ export class EissdService implements OnModuleInit {
 
       return response.data; // Возвращаем данные ответа
     } catch (error) {
-      throw new Error('Ошибка при отправке запроса: ' + error.message);
+      throw new Error('Ошибка при заведении заявки в eissd: ' + error.message);
     }
   }
   // Побочные функции

@@ -26,12 +26,6 @@ async function bootstrap() {
           level: 'info',
           format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
         }),
-        // Транспорт для файла с работай eissd
-        new winston.transports.File({
-          filename: 'logs/eissd.log',
-          level: 'eissd',
-          format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
-        }),
       ],
     }),
   });
