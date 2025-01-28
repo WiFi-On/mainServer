@@ -41,6 +41,11 @@ export class EissdController {
   async testAuth() {
     return this.EissdService.authEissd();
   }
+  @Get('testInfoApplication')
+  async testInfoApplication() {
+    const result = await this.EissdService.getInfoApplication('1100388451857');
+    return result;
+  }
   // @Get('testTHV')
   // async testTHV() {
   //   return this.EissdService.checkTHV('Широтная 105 кв. 1');

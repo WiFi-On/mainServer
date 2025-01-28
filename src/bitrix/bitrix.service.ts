@@ -179,11 +179,12 @@ export class BitrixService {
    * const result = await moveToAppointed('12345', 'Назначено ответственному');
    * console.log(result);
    */
-  async moveToAppointed(id_deal: string, comment: string): Promise<BitrixReturnData> {
+  async moveToAppointed(id_deal: string, comment: string, id_application?: string): Promise<BitrixReturnData> {
     const url = `${this.bitrixHook}/${this.dealUpdate}`;
     const params = {
       ID: id_deal,
       'fields[STAGE_ID]': 'EXECUTING',
+      ...(id_application ? { 'fields[UF_CRM_1697462646338]': id_application } : {}),
       'fields[COMMENTS]': comment,
     };
     const fullUrl = `${url}?${querystring.stringify(params)}`;
@@ -305,4 +306,10 @@ export class BitrixService {
       throw new HttpException(`Failed to fetch deals: ${error.message}`, HttpStatus.BAD_REQUEST);
     }
   }
+  // TODO пересмотреть создание, изменение заявок.
+  async getIdApplication() {}
+  async moveToConnected() {}
+  async moveToRefusal() {}
+  async moveToPotential() {}
+  async moveToWorkingOff() {}
 }

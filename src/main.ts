@@ -10,21 +10,69 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: WinstonModule.createLogger({
       transports: [
-        // Транспорт для консоли
+        // Консольный транспорт
         new winston.transports.Console({
           format: winston.format.combine(
-            winston.format.timestamp(),
+            winston.format.timestamp({
+              format: 'YYYY-MM-DD HH:mm:ss.SSS',
+            }),
             winston.format.colorize(),
-            winston.format.printf(({ timestamp, level, message, context }) => {
-              return `${timestamp} [${level}] ${message} ${context ? context : ''}`;
+            winston.format.printf(({ timestamp, level, message, context, address, path, result }) => {
+              return `${timestamp} [${level}] ${message} ${JSON.stringify({
+                context,
+                address,
+                path,
+                result,
+              })}`;
             }),
           ),
         }),
-        // Транспорт для файла общей информации
+        // Общий файл логов (все уровни от info и выше)
         new winston.transports.File({
-          filename: 'logs/application.log',
+          filename: 'logs/combined.log',
           level: 'info',
-          format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+          format: winston.format.combine(
+            winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
+            winston.format.json({
+              replacer: (key, value) => {
+                if (value instanceof Error) {
+                  return {
+                    message: value.message,
+                    stack: value.stack,
+                    ...value,
+                  };
+                }
+                return value;
+              },
+            }),
+          ),
+        }),
+        // Файл только для информационных сообщений
+        new winston.transports.File({
+          filename: 'logs/info.log',
+          level: 'info',
+          format: winston.format.combine(winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }), winston.format.json()),
+          // filter: (log) => log.level === 'info',
+        }),
+        // Файл только для ошибок
+        new winston.transports.File({
+          filename: 'logs/errors.log',
+          level: 'error',
+          format: winston.format.combine(
+            winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
+            winston.format.json({
+              replacer: (key, value) => {
+                if (value instanceof Error) {
+                  return {
+                    message: value.message,
+                    stack: value.stack,
+                    ...value,
+                  };
+                }
+                return value;
+              },
+            }),
+          ),
         }),
       ],
     }),

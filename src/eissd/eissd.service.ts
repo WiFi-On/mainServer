@@ -33,6 +33,8 @@ export class EissdService implements OnModuleInit {
   private readonly enviroment: string;
   private readonly mrfRegionList: string[];
   private readonly techId: { [key: string]: string };
+  private readonly statusIdReason: { [key: string]: string };
+  private readonly statusId: { [key: string]: string };
   private sessionId: string;
   constructor(
     @Inject(ConfigService) private readonly configService: ConfigService,
@@ -86,6 +88,112 @@ export class EissdService implements OnModuleInit {
       FTTx: '10036',
       xDSL: '10035',
     };
+    this.statusId = {
+      '1': 'Требуется провести онлайн проверку ТхВ',
+      '31': 'Требуется ручная проверка ТхВ с выездом',
+      '32': 'Требуется ручная проверка ТхВ без выезда',
+      '34': 'Требуется уточнение адреса',
+      '35': 'Требуется связаться с клиентом и назначить дату и время инсталляции',
+      '36': 'Самоинсталляция / Доставка оборудования курьером, 0/1',
+      '37': 'Назначены дата и время инсталляции',
+      '38': 'Требуется техническая подготовка подключения услуг (кроссировка и т.п)',
+      '39': 'Требуется активировать услугу / Связаться с клиентом',
+      '40': 'Перенос даты и времени инсталляции',
+      '41': 'Отложенная заявка / Требуется перезвонить клиенту в определенную дату',
+      '42': 'Требуется организация последней мили / КИП',
+      '4': 'Требуется уточнение параметров заявки',
+      '7': 'Услуга подключена',
+      '12': 'Отказ',
+      '13': 'Дубликат',
+      '14': 'Неверная заявка',
+      '15': 'Тест',
+      '16': 'Другая',
+      '17': 'Callback. Требуется заполнить заявку',
+      '20': 'Callback. Недозвон',
+      '21': 'Callback. Отказ клиента',
+      '22': 'Callback. Неверная заявка',
+      '23': 'Callback. Выполнена',
+      '43': 'Абонент должен устранить причину',
+      '44': 'Принято в работу сотрудником НПП',
+    };
+    this.statusIdReason = {
+      '10': 'Выбрал другого провайдера',
+      '11': 'Услугу не заказывал',
+      '12': 'Нет связи с клиентом',
+      '13': 'Не устроили условия монтажа линии и/или оборудования/Запрет монтажа/отсутствует бесплатная настройка',
+      '14': 'Неверно проинформирован по услугам, тарифам, технологиям',
+      '15': 'Длительный срок подключения',
+      '16': 'Заявка удалена по письму/звонку КЦ/через Личный кабинет',
+      '17': 'Без объяснения причин',
+      '18': 'Нежилое помещение',
+      '19': 'Квартира съемная - собственник против',
+      '20': 'Параметры клиента не удовлетворяют условиям акции',
+      '21': 'Нет свободных портов',
+      '22': 'Недостаточная пропускная способность абонентской линии',
+      '23': 'Недостаточная пропускная способность магистрального канала',
+      '24': 'Ошибка линейных данных',
+      '25': 'Нет подключения к сетям Ростелекома/Нет последней мили внутри объекта',
+      '26': 'Плохое качество услуги при демонстрации',
+      '27': 'Проблема (неисправность) с оконечным оборудованием РТК',
+      '28': 'Отсутствие оконечного оборудования Ростелеком',
+      '29': 'Некорректное оформление заявки/заказа/наряда/задания',
+      '30': 'Невыход инсталлятора в назначенное время',
+      '31': 'Нет доступа к оборудованию РТК',
+      '32': 'Претензии по качеству работы и обслуживания инсталлятора',
+      '33': 'Некорректное оформление документов инсталлятором',
+      '34': 'По адресу клиента временно не доступен сервис РТК',
+      '49': 'Существующий абонент',
+      '51': 'Отказ по причине отсутствия Стартового платежа',
+      '52': 'Отказ от перехода в платный период',
+      '53': 'Услуга в промо-периоде',
+      '55': 'Решил остаться на своем провайдере',
+      '56': 'Негативные отзывы о компании/ опыт коллег, знакомых, родных',
+      '57': 'Не устраивает стоимость тарифного плана/оборудования',
+      '58': 'Длительный отъезд/командировка/болезнь. Подаст заявку позднее.',
+      '59': 'Не устраивает предложенная технология подключения',
+      '60': 'Не согласен с инсталляционным платежом/годовым контрактом',
+      '61': 'Дебиторская задолженность',
+      '62': 'Есть финансовая блокировка',
+      '63': 'Превышена максимальная сумма рассрочек',
+      '64': 'Не согласен менять ТП Социальный интернет/снимать Добровольную блокировку',
+      '65': 'Неверный номер телефона клиента/номер не обслуживается',
+      '66': 'Несовершеннолетний клиент',
+      '67': 'У Клиента отсутствует орг. техника (телевизор, ПК, ноутбук и т.п.)',
+      '68': 'В заявке указан неверный адрес/другой регион',
+      '69': 'Клиенту требовалась консультация (тарифы, услуги, ТхВ и т.п.)',
+      '70': 'Не оплачен Стартовый платеж',
+      '71': 'Есть Социальный интернет/Добровольная блокировка',
+      '72': 'По просьбе клиента, до выезда инсталлятора',
+      '73': 'По просьбе клиента, с выездом инсталлятора',
+      '74': 'По инициативе РТК на раний срок',
+      '75': 'Инсталлятор не успевает, сообщил в НПП',
+      '76': 'Инсталлятор не пришел, в НПП не сообщил',
+      '77': 'Проблемы с доступом к оборудованию РТК',
+      '78': 'На адресе требуется устанить nRFS',
+      '79': 'Проблема с нарядом',
+      '80': 'У клиента отсутствует оконечное оборудование/ розетка для подключения',
+      '81': 'Отсутствие оконечного оборудования/материалов у инсталлятора',
+      '82': 'Сложное подключение',
+      '83': 'Некорректное назначение на исполнителя',
+      '84': 'Неблагоприятные погодные условия',
+      '85': 'Отсутствие инструментов/спецтехники',
+      '86': 'Не дозвонились до клиента',
+      '87': 'Нет доступного тайм-слота',
+      '88': 'Дубликат заявки от канала продаж',
+      '89': 'Ошибка информационной системы',
+      '90': 'По просьбе канала продаж',
+      '100': 'Выездной WFM наряд успешно создан',
+      '101': 'Выездной WFM наряд успешно обновлён',
+      '102': 'Изменения в коммерческий заказ внесены.',
+      '103': 'Ошибка, не удалось внести изменения в коммерческий заказ.',
+      '104': 'Ошибка назначения наряда WFM, для указанного сотрудника не удалось подобрать подходящий участок.',
+      '105': 'Ошибка, не удалось обновить наряд WFM',
+      '106': 'Заявка выполнена частично',
+      '107': 'Основная ошибка',
+      '108': 'Ошибка POC',
+      '109': 'Ошибка при взятии заказа в работу',
+      '110': 'Не найдено забронированное окно',
+    };
   }
   /**
    * Функция запускается при инициализации модуля. Нужно для получения куки файла сессии, что бы в дальнейшем можно было использовать нужные ручки.
@@ -94,9 +202,10 @@ export class EissdService implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     if (this.enviroment === 'prod') {
       this.sessionId = await this.authEissd();
-      await this.main();
+      await this.creatingApplications();
     }
   }
+
   /**
    * Главная функция, которая запускается каждые 2 минуты для заведения заявок из колоник в bitrix.
    * Если что это взаимодействие с api, которое доступно только внутри сайта eissd.
@@ -105,29 +214,53 @@ export class EissdService implements OnModuleInit {
    * @returns {Promise<void>} Данные, возвращаемые системой Bitrix24 при успешном создании контакта.
    */
   @Cron('*/2 * * * *')
-  async main(): Promise<void> {
+  async creatingApplications(): Promise<void> {
     if (this.enviroment === 'prod') {
+      // Получаем заявки по ростелекому из битрикса
       const leadsBitrixRtk = await this.bitrixService.getDealsOnProviders(52);
       for (const lead of leadsBitrixRtk) {
         try {
+          // Проверяем техническую возможность
           const thv = await this.checkTHV(lead.address);
+          // Если техническая возможность есть, то заводим.
           if (thv.result.thv) {
+            // Создаем заявку и отправляем в eissd
             const application = await this.formingApplication(lead.number, lead.fio, thv);
+            // Если при создании заявки что то пошло не так, то возвращаем ошибку в битрикс в комментарии.
             if (application.err) {
-              this.logger.error('Заявка не заведена', { address: lead.address, path: 'eissd/main', result: application.result });
+              this.logger.error(`Заявка не заведена. Адрес: ${lead.address}. Причина: ${application.result}`, {
+                context: 'EissdService',
+                address: lead.address,
+                path: 'eissd/main',
+                result: application.result,
+              });
               this.bitrixService.moveToError(lead.id, application.result);
               continue;
-            } else if (!application.err && application.result.includes('Заявка назначена')) {
-              this.logger.log('Заявка назначена', { address: lead.address, path: 'eissd/main', result: application.result });
-              this.bitrixService.moveToAppointed(lead.id, application.result);
             }
-          } else {
-            this.logger.error('Нужно проверить тхв вручную', { address: lead.address, path: 'eissd/main', result: thv.result.thv });
-            this.bitrixService.moveToError(lead.id, 'проверка ТХВ');
+            // Если заявка заведена, то отправляем в битрикс
+            else if (!application.err && application.result.includes('Заявка назначена')) {
+              this.logger.log('Заявка назначена', { address: lead.address, path: 'eissd/main', result: application.result });
+              this.bitrixService.moveToAppointed(lead.id, application.result, application.idApplication);
+            }
+          }
+          // если нет технических возможности, то отправляем в битрикс с комментрарием проверить техническую возможность
+          else {
+            this.logger.error(`Нужно проверить тхв вручную. Адрес: ${lead.address}`, {
+              context: 'EissdService',
+              address: lead.address,
+              path: 'eissd/main',
+              result: thv.result.thv,
+            });
+            this.bitrixService.moveToError(lead.id, 'Нужно проверить тхв вручную');
           }
         } catch (error) {
-          this.logger.error('Ошибка при заведении заявки', { address: lead.address, path: 'eissd/main', result: error });
-          this.bitrixService.moveToError(lead.id, error);
+          this.logger.error(`Ошибка при создании заявки. Адрес: ${lead.address}. Причина: ${error.message}`, {
+            context: 'EissdService',
+            address: lead.address,
+            path: 'eissd/main',
+            result: error.message,
+          });
+          this.bitrixService.moveToError(lead.id, error.message);
         }
       }
     }
@@ -153,7 +286,13 @@ export class EissdService implements OnModuleInit {
    * @param {string} [fio=''] - ФИО клиента.
    * @returns {Promise<BitrixReturnData>} Данные, возвращаемые системой Bitrix24 при успешном создании контакта.
    */
-  async formingApplication(number: string, fio: string, thv: ResultThvEissdI): Promise<{ err: boolean; result: string }> {
+  async formingApplication(number: string, fio: string, thv: ResultThvEissdI): Promise<{ err: boolean; result: string; idApplication?: string }> {
+    const result = {
+      err: false,
+      result: '',
+      idApplication: '',
+    };
+
     try {
       const orgId = await this.getOrgId(thv.infoAddress.regionId);
 
@@ -181,14 +320,20 @@ export class EissdService implements OnModuleInit {
         iptv = await this.getIPTVtariff(thv.infoAddress.regionId, thv.infoAddress.cityId, thv.result.TechId);
       }
       if (!shpd) {
-        return { err: true, result: 'Тариф SHPD не найден' };
+        result.err = true;
+        result.result = 'Тариф SHPD не найден';
+        return result;
       }
       if (!iptv) {
-        return { err: true, result: 'Тариф IPTV не найден' };
+        result.err = true;
+        result.result = 'Тариф IPTV не найден';
+        return result;
       }
       const sim = await this.getSIMtariff(thv.infoAddress.regionId, orgId, thv.infoAddress.regionFullName);
       if (!sim) {
-        return { err: true, result: 'Тариф SIM не найден' };
+        result.err = true;
+        result.result = 'Тариф SIM не найден';
+        return result;
       }
 
       let name = '';
@@ -206,24 +351,21 @@ export class EissdService implements OnModuleInit {
 
       if (Object.keys(eissdApplication).length > 2) {
         if (thv.result.thv && thv.result.Res == 'Y') {
-          return {
-            err: false,
-            result: 'Заявка назначена' + ' || ' + eissdApplication.orderId,
-          };
+          result.idApplication = eissdApplication.orderId;
+          result.result = 'Заявка назначена';
+          return result;
         } else {
-          return {
-            err: false,
-            result: 'Заявка на сохранении' + ' || ' + eissdApplication.orderId,
-          };
+          result.idApplication = eissdApplication.orderId;
+          result.result = 'Заявка на сохранении';
+          return result;
         }
       } else {
-        return {
-          err: true,
-          result: eissdApplication.errorText,
-        };
+        result.err = true;
+        result.result = eissdApplication.errorText;
+        return result;
       }
     } catch (error) {
-      throw Error(error);
+      throw Error('Ошибка в формировании заявки: ' + error.message);
     }
   }
   /**
@@ -251,8 +393,33 @@ export class EissdService implements OnModuleInit {
 
       return sessionId;
     } catch (error) {
-      throw 'Ошибка в авторизации в Eissd: ' + error.message;
+      throw Error('Ошибка в авторизации в Eissd: ' + error.message);
     }
+  }
+  async getInfoApplication(id: string): Promise<any> {
+    // Подготовка запроса
+    const requestBody = `
+      <GetSvcClassOrderStatusAgent>
+        <OrderId>${id}</OrderId>
+      </GetSvcClassOrderStatusAgent>
+      `;
+
+    let response: string;
+    try {
+      response = await this.sendXMLRequest(requestBody);
+    } catch (error) {
+      throw new Error('Ошибка в отправке запроса: ' + error.message);
+    }
+
+    // Парсинг ответа
+    let parsXml;
+    try {
+      parsXml = await this.parseXmlResponse(response);
+    } catch (error) {
+      throw new Error('Ошибка в парсинге ответа: ' + error.message);
+    }
+
+    return parsXml;
   }
   /**
    * Функция для получения технической возможности и информации по адресу.
@@ -334,7 +501,7 @@ export class EissdService implements OnModuleInit {
       throw new Error('Ошибка в получении id населенного пункта: ' + error.message);
     }
     if (!idDistrict) {
-      throw new Error('id населенного пункта не определен');
+      throw new Error('id населенного пункта не найдет в базе');
     }
 
     // Получение айди улицы
@@ -350,7 +517,7 @@ export class EissdService implements OnModuleInit {
       throw new Error('Ошибка в получении id улицы: ' + error.message);
     }
     if (!idStreet) {
-      throw new Error('id улицы не определен');
+      throw new Error('id улицы не найден в базе');
     }
 
     // Получение айди дома
@@ -364,7 +531,7 @@ export class EissdService implements OnModuleInit {
       throw new Error('Ошибка в получении id дома: ' + error.message);
     }
     if (!idHouse) {
-      throw new Error('id дома не определен');
+      throw new Error('id дома не найден в базе');
     }
 
     // Подготовка запроса
