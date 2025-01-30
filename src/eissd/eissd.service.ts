@@ -22,6 +22,8 @@ import tariffMrfI from './interfaces/tariffMrf.interface';
 import tariffI from './interfaces/tariff.interface';
 import OptionI from './interfaces/option.interface';
 import tariffSimI from './interfaces/tariffSim.interface';
+import { BitrixStatuses } from 'src/bitrix/interfaces/BitrixStatuses.interface';
+import { StatusesApplicationI } from './interfaces/statusesApplication.interface';
 
 @Injectable()
 export class EissdService implements OnModuleInit {
@@ -31,10 +33,11 @@ export class EissdService implements OnModuleInit {
   private readonly pathKeyDev: string;
   private readonly pathCertDev: string;
   private readonly enviroment: string;
-  private readonly mrfRegionList: string[];
-  private readonly techId: { [key: string]: string };
-  private readonly statusIdReason: { [key: string]: string };
-  private readonly statusId: { [key: string]: string };
+  private readonly mrfRegions: string[];
+  private readonly techIds: { [key: string]: string };
+  private readonly statusIdsReason: { [key: string]: { [key: string]: string } };
+  private readonly statusIds: { [key: string]: string };
+  private readonly serviceIds: { [key: string]: string };
   private sessionId: string;
   constructor(
     @Inject(ConfigService) private readonly configService: ConfigService,
@@ -50,7 +53,7 @@ export class EissdService implements OnModuleInit {
     this.pathKeyDev = this.configService.get<string>('EISSD_KEY_DEV');
     this.pathCertDev = this.configService.get<string>('EISSD_CERT_DEV');
     this.enviroment = this.configService.get<string>('ENV');
-    this.mrfRegionList = [
+    this.mrfRegions = [
       '28',
       '79',
       '41',
@@ -81,14 +84,14 @@ export class EissdService implements OnModuleInit {
       '45',
       '39',
     ];
-    this.techId = {
+    this.techIds = {
       'БШПД (WBA)': '10063',
       PSTN: '10044',
       PON: '10037',
       FTTx: '10036',
       xDSL: '10035',
     };
-    this.statusId = {
+    this.statusIds = {
       '1': 'Требуется провести онлайн проверку ТхВ',
       '31': 'Требуется ручная проверка ТхВ с выездом',
       '32': 'Требуется ручная проверка ТхВ без выезда',
@@ -116,83 +119,93 @@ export class EissdService implements OnModuleInit {
       '43': 'Абонент должен устранить причину',
       '44': 'Принято в работу сотрудником НПП',
     };
-    this.statusIdReason = {
-      '10': 'Выбрал другого провайдера',
-      '11': 'Услугу не заказывал',
-      '12': 'Нет связи с клиентом',
-      '13': 'Не устроили условия монтажа линии и/или оборудования/Запрет монтажа/отсутствует бесплатная настройка',
-      '14': 'Неверно проинформирован по услугам, тарифам, технологиям',
-      '15': 'Длительный срок подключения',
-      '16': 'Заявка удалена по письму/звонку КЦ/через Личный кабинет',
-      '17': 'Без объяснения причин',
-      '18': 'Нежилое помещение',
-      '19': 'Квартира съемная - собственник против',
-      '20': 'Параметры клиента не удовлетворяют условиям акции',
-      '21': 'Нет свободных портов',
-      '22': 'Недостаточная пропускная способность абонентской линии',
-      '23': 'Недостаточная пропускная способность магистрального канала',
-      '24': 'Ошибка линейных данных',
-      '25': 'Нет подключения к сетям Ростелекома/Нет последней мили внутри объекта',
-      '26': 'Плохое качество услуги при демонстрации',
-      '27': 'Проблема (неисправность) с оконечным оборудованием РТК',
-      '28': 'Отсутствие оконечного оборудования Ростелеком',
-      '29': 'Некорректное оформление заявки/заказа/наряда/задания',
-      '30': 'Невыход инсталлятора в назначенное время',
-      '31': 'Нет доступа к оборудованию РТК',
-      '32': 'Претензии по качеству работы и обслуживания инсталлятора',
-      '33': 'Некорректное оформление документов инсталлятором',
-      '34': 'По адресу клиента временно не доступен сервис РТК',
-      '49': 'Существующий абонент',
-      '51': 'Отказ по причине отсутствия Стартового платежа',
-      '52': 'Отказ от перехода в платный период',
-      '53': 'Услуга в промо-периоде',
-      '55': 'Решил остаться на своем провайдере',
-      '56': 'Негативные отзывы о компании/ опыт коллег, знакомых, родных',
-      '57': 'Не устраивает стоимость тарифного плана/оборудования',
-      '58': 'Длительный отъезд/командировка/болезнь. Подаст заявку позднее.',
-      '59': 'Не устраивает предложенная технология подключения',
-      '60': 'Не согласен с инсталляционным платежом/годовым контрактом',
-      '61': 'Дебиторская задолженность',
-      '62': 'Есть финансовая блокировка',
-      '63': 'Превышена максимальная сумма рассрочек',
-      '64': 'Не согласен менять ТП Социальный интернет/снимать Добровольную блокировку',
-      '65': 'Неверный номер телефона клиента/номер не обслуживается',
-      '66': 'Несовершеннолетний клиент',
-      '67': 'У Клиента отсутствует орг. техника (телевизор, ПК, ноутбук и т.п.)',
-      '68': 'В заявке указан неверный адрес/другой регион',
-      '69': 'Клиенту требовалась консультация (тарифы, услуги, ТхВ и т.п.)',
-      '70': 'Не оплачен Стартовый платеж',
-      '71': 'Есть Социальный интернет/Добровольная блокировка',
-      '72': 'По просьбе клиента, до выезда инсталлятора',
-      '73': 'По просьбе клиента, с выездом инсталлятора',
-      '74': 'По инициативе РТК на раний срок',
-      '75': 'Инсталлятор не успевает, сообщил в НПП',
-      '76': 'Инсталлятор не пришел, в НПП не сообщил',
-      '77': 'Проблемы с доступом к оборудованию РТК',
-      '78': 'На адресе требуется устанить nRFS',
-      '79': 'Проблема с нарядом',
-      '80': 'У клиента отсутствует оконечное оборудование/ розетка для подключения',
-      '81': 'Отсутствие оконечного оборудования/материалов у инсталлятора',
-      '82': 'Сложное подключение',
-      '83': 'Некорректное назначение на исполнителя',
-      '84': 'Неблагоприятные погодные условия',
-      '85': 'Отсутствие инструментов/спецтехники',
-      '86': 'Не дозвонились до клиента',
-      '87': 'Нет доступного тайм-слота',
-      '88': 'Дубликат заявки от канала продаж',
-      '89': 'Ошибка информационной системы',
-      '90': 'По просьбе канала продаж',
-      '100': 'Выездной WFM наряд успешно создан',
-      '101': 'Выездной WFM наряд успешно обновлён',
-      '102': 'Изменения в коммерческий заказ внесены.',
-      '103': 'Ошибка, не удалось внести изменения в коммерческий заказ.',
-      '104': 'Ошибка назначения наряда WFM, для указанного сотрудника не удалось подобрать подходящий участок.',
-      '105': 'Ошибка, не удалось обновить наряд WFM',
-      '106': 'Заявка выполнена частично',
-      '107': 'Основная ошибка',
-      '108': 'Ошибка POC',
-      '109': 'Ошибка при взятии заказа в работу',
-      '110': 'Не найдено забронированное окно',
+    this.statusIdsReason = {
+      '10': { status_name: 'Выбрал другого провайдера', bitrix_status: 'Отработка Заявок' },
+      '11': { status_name: 'Услугу не заказывал', bitrix_status: 'Отработка Заявок' },
+      '12': { status_name: 'Нет связи с клиентом', bitrix_status: 'Отработка Заявок' },
+      '13': { status_name: 'Не устроили условия монтажа линии и/или оборудования/Запрет монтажа/отсутствует бесплатная настройка', bitrix_status: 'Отработка Заявок' },
+      '14': { status_name: 'Неверно проинформирован по услугам, тарифам, технологиям', bitrix_status: 'Отработка Заявок' },
+      '15': { status_name: 'Длительный срок подключения', bitrix_status: 'Отработка Заявок' },
+      '16': { status_name: 'Заявка удалена по письму/звонку КЦ/через Личный кабинет', bitrix_status: 'Отработка Заявок' },
+      '17': { status_name: 'Без объяснения причин', bitrix_status: 'Отработка Заявок' },
+      '18': { status_name: 'Нежилое помещение', bitrix_status: 'Отказ', bitrix_cause: 'Нет тхв' },
+      '19': { status_name: 'Квартира съемная - собственник против', bitrix_status: 'Отработка Заявок' },
+      '20': { status_name: 'Параметры клиента не удовлетворяют условиям акции', bitrix_status: 'Отработка Заявок' },
+      '21': { status_name: 'Нет свободных портов', bitrix_status: 'Отработка Заявок' },
+      '22': { status_name: 'Недостаточная пропускная способность абонентской линии', bitrix_status: 'Отработка Заявок' },
+      '23': { status_name: 'Недостаточная пропускная способность магистрального канала', bitrix_status: 'Отработка Заявок' },
+      '24': { status_name: 'Ошибка линейных данных', bitrix_status: 'Отработка Заявок' },
+      '25': { status_name: 'Нет подключения к сетям Ростелекома/Нет последней мили внутри объекта', bitrix_status: 'Отказ', bitrix_cause: 'Нет тхв' },
+      '26': { status_name: 'Плохое качество услуги при демонстрации', bitrix_status: 'Отработка Заявок' },
+      '27': { status_name: 'Проблема (неисправность) с оконечным оборудованием РТК', bitrix_status: 'Отработка Заявок' },
+      '28': { status_name: 'Отсутствие оконечного оборудования Ростелеком', bitrix_status: 'Отработка Заявок' },
+      '29': { status_name: 'Некорректное оформление заявки/заказа/наряда/задания', bitrix_status: 'Отработка Заявок' },
+      '30': { status_name: 'Невыход инсталлятора в назначенное время', bitrix_status: 'Отработка Заявок' },
+      '31': { status_name: 'Нет доступа к оборудованию РТК', bitrix_status: 'Отработка Заявок' },
+      '32': { status_name: 'Претензии по качеству работы и обслуживания инсталлятора', bitrix_status: 'Отработка Заявок' },
+      '33': { status_name: 'Некорректное оформление документов инсталлятором', bitrix_status: 'Отработка Заявок' },
+      '34': { status_name: 'По адресу клиента временно не доступен сервис РТК', bitrix_status: 'Отказ', bitrix_cause: 'Нет тхв' },
+      '49': { status_name: 'Существующий абонент', bitrix_status: 'Отказ', bitrix_cause: 'Дубль' },
+      '51': { status_name: 'Отказ по причине отсутствия Стартового платежа', bitrix_status: 'Клиент подключен' },
+      '52': { status_name: 'Отказ от перехода в платный период', bitrix_status: 'Отработка Заявок' },
+      '53': { status_name: 'Услуга в промо-периоде', bitrix_status: 'Отработка Заявок' },
+      '55': { status_name: 'Решил остаться на своем провайдере', bitrix_status: 'Отработка Заявок' },
+      '56': { status_name: 'Негативные отзывы о компании/ опыт коллег, знакомых, родных', bitrix_status: 'Отработка Заявок' },
+      '57': { status_name: 'Не устраивает стоимость тарифного плана/оборудования', bitrix_status: 'Отработка Заявок' },
+      '58': { status_name: 'Длительный отъезд/командировка/болезнь. Подаст заявку позднее.', bitrix_status: 'Отработка Заявок' },
+      '59': { status_name: 'Не устраивает предложенная технология подключения', bitrix_status: 'Отработка Заявок' },
+      '60': { status_name: 'Не согласен с инсталляционным платежом/годовым контрактом', bitrix_status: 'Отработка Заявок' },
+      '61': { status_name: 'Дебиторская задолженность', bitrix_status: 'Отказ', bitrix_cause: 'Нет тхв' },
+      '62': { status_name: 'Есть финансовая блокировка', bitrix_status: 'Отказ', bitrix_cause: 'Нет тхв' },
+      '63': { status_name: 'Превышена максимальная сумма рассрочек', bitrix_status: 'Отработка Заявок' },
+      '64': { status_name: 'Не согласен менять ТП Социальный интернет/снимать Добровольную блокировку', bitrix_status: 'Отработка Заявок' },
+      '65': { status_name: 'Неверный номер телефона клиента/номер не обслуживается', bitrix_status: 'Отработка Заявок' },
+      '66': { status_name: 'Несовершеннолетний клиент', bitrix_status: 'Отработка Заявок' },
+      '67': { status_name: 'У Клиента отсутствует орг. техника (телевизор, ПК, ноутбук и т.п.)', bitrix_status: 'Отработка Заявок' },
+      '68': { status_name: 'В заявке указан неверный адрес/другой регион', bitrix_status: 'Отработка Заявок' },
+      '69': { status_name: 'Клиенту требовалась консультация (тарифы, услуги, ТхВ и т.п.)', bitrix_status: 'Отработка Заявок' },
+      '70': { status_name: 'Не оплачен Стартовый платеж', bitrix_status: 'Клиент подключен' },
+      '71': { status_name: 'Есть Социальный интернет/Добровольная блокировка', bitrix_status: 'Отработка Заявок' },
+      '72': { status_name: 'По просьбе клиента, до выезда инсталлятора', bitrix_status: 'Отработка Заявок' },
+      '73': { status_name: 'По просьбе клиента, с выездом инсталлятора', bitrix_status: 'Отработка Заявок' },
+      '74': { status_name: 'По инициативе РТК на ранний срок', bitrix_status: 'Отработка Заявок' },
+      '75': { status_name: 'Инсталлятор не успевает, сообщил в НПП', bitrix_status: 'Отработка Заявок' },
+      '76': { status_name: 'Инсталлятор не пришел, в НПП не сообщил', bitrix_status: 'Отработка Заявок' },
+      '77': { status_name: 'Проблемы с доступом к оборудованию РТК', bitrix_status: 'Отработка Заявок' },
+      '78': { status_name: 'На адресе требуется установить nRFS', bitrix_status: 'Отказ', bitrix_cause: 'Нет тхв' },
+      '79': { status_name: 'Проблема с нарядом', bitrix_status: 'Отработка Заявок' },
+      '80': { status_name: 'У клиента отсутствует оконечное оборудование/ розетка для подключения', bitrix_status: 'Отработка Заявок' },
+      '81': { status_name: 'Отсутствие оконечного оборудования/материалов у инсталлятора', bitrix_status: 'Отработка Заявок' },
+      '82': { status_name: 'Сложное подключение', bitrix_status: 'Отработка Заявок' },
+      '83': { status_name: 'Некорректное назначение на исполнителя', bitrix_status: 'Отработка Заявок' },
+      '84': { status_name: 'Неблагоприятные погодные условия', bitrix_status: 'Отработка Заявок' },
+      '85': { status_name: 'Отсутствие инструментов/спецтехники', bitrix_status: 'Отработка Заявок' },
+      '86': { status_name: 'Не дозвонились до клиента', bitrix_status: 'Отработка Заявок' },
+      '87': { status_name: 'Нет доступного тайм-слота', bitrix_status: 'Отработка Заявок' },
+      '88': { status_name: 'Дубликат заявки от канала продаж', bitrix_status: 'Отказ', bitrix_cause: 'Нет тхв' },
+      '89': { status_name: 'Ошибка информационной системы', bitrix_status: 'Отработка Заявок' },
+      '90': { status_name: 'По просьбе канала продаж', bitrix_status: 'Отработка Заявок' },
+      '100': { status_name: 'Выездной WFM наряд успешно создан', bitrix_status: 'Заявка назначена' },
+      '101': { status_name: 'Выездной WFM наряд успешно обновлён', bitrix_status: 'Заявка назначена' },
+      '102': { status_name: 'Изменения в коммерческий заказ внесены', bitrix_status: 'Заявка назначена' },
+      '103': { status_name: 'Ошибка, не удалось внести изменения в коммерческий заказ', bitrix_status: 'Отработка Заявок' },
+      '104': { status_name: 'Ошибка назначения наряда WFM, для указанного сотрудника не удалось подобрать подходящий участок', bitrix_status: 'Отработка Заявок' },
+      '105': { status_name: 'Ошибка, не удалось обновить наряд WFM', bitrix_status: 'Отработка Заявок' },
+      '106': { status_name: 'Заявка выполнена частично', bitrix_status: 'Заявка назначена' },
+      '107': { status_name: 'Основная ошибка', bitrix_status: 'Отработка Заявок' },
+      '108': { status_name: 'Ошибка POC', bitrix_status: 'Отработка Заявок' },
+      '109': { status_name: 'Ошибка при взятии заказа в работу', bitrix_status: 'Отработка Заявок' },
+      '110': { status_name: 'Не найдено забронированное окно', bitrix_status: 'Заявка назначена' },
+    };
+    this.serviceIds = {
+      '1': 'Интернет',
+      '2': 'IPTV',
+      '3': 'Домашний телефон',
+      '4': 'Умный дом',
+      '5': 'Мобильная связь',
+      '18': 'Wink-ТВ-онлайн',
+      '1001': 'Ростелеком Лицей',
+      '1044': 'Ростелеком Юрист',
     };
   }
   /**
@@ -217,7 +230,7 @@ export class EissdService implements OnModuleInit {
   async creatingApplications(): Promise<void> {
     if (this.enviroment === 'prod') {
       // Получаем заявки по ростелекому из битрикса
-      const leadsBitrixRtk = await this.bitrixService.getDealsOnProviders(52);
+      const leadsBitrixRtk = await this.bitrixService.getDeals(BitrixStatuses.toSent, 52);
       for (const lead of leadsBitrixRtk) {
         try {
           // Проверяем техническую возможность
@@ -234,13 +247,13 @@ export class EissdService implements OnModuleInit {
                 path: 'eissd/main',
                 result: application.result,
               });
-              this.bitrixService.moveToError(lead.id, application.result);
+              this.bitrixService.editApplication(lead.id, application.result, undefined, BitrixStatuses.toError);
               continue;
             }
             // Если заявка заведена, то отправляем в битрикс
             else if (!application.err && application.result.includes('Заявка назначена')) {
               this.logger.log('Заявка назначена', { address: lead.address, path: 'eissd/main', result: application.result });
-              this.bitrixService.moveToAppointed(lead.id, application.result, application.idApplication);
+              this.bitrixService.editApplication(lead.id, application.result, application.idApplication, BitrixStatuses.toAppointed);
             }
           }
           // если нет технических возможности, то отправляем в битрикс с комментрарием проверить техническую возможность
@@ -251,7 +264,7 @@ export class EissdService implements OnModuleInit {
               path: 'eissd/main',
               result: thv.result.thv,
             });
-            this.bitrixService.moveToError(lead.id, 'Нужно проверить тхв вручную');
+            this.bitrixService.editApplication(lead.id, 'Нужно проверить тхв вручную', undefined, BitrixStatuses.toError);
           }
         } catch (error) {
           this.logger.error(`Ошибка при создании заявки. Адрес: ${lead.address}. Причина: ${error.message}`, {
@@ -260,7 +273,81 @@ export class EissdService implements OnModuleInit {
             path: 'eissd/main',
             result: error.message,
           });
-          this.bitrixService.moveToError(lead.id, error.message);
+          this.bitrixService.editApplication(lead.id, error.message, undefined, BitrixStatuses.toError);
+        }
+      }
+    }
+  }
+  async editStatusApplication(): Promise<void> {
+    if (this.enviroment === 'prod') {
+      const leadsBitrix = await this.bitrixService.getDeals(BitrixStatuses.toAppointed);
+      for (const lead of leadsBitrix) {
+        try {
+          const statusApplication = await this.getStatusesApplication(lead.id);
+          const serviceInternet = statusApplication.find((service) => service.serviceId === '1');
+          if (!serviceInternet.statusReasonId && serviceInternet.statusId === '37') {
+            this.logger.log(`Назначены дата и время инсталляции. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
+              context: 'EissdService.editStatusApplication',
+              idBitrix: lead.id,
+              idApplication: lead.application_id,
+              serviceInternet: serviceInternet,
+            });
+            continue;
+          } else if (!serviceInternet.statusReasonId && serviceInternet.statusId === '7') {
+            this.bitrixService.editApplication(lead.id, undefined, lead.application_id, BitrixStatuses.toConnected);
+            this.logger.log(`Клиент подключен. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
+              context: 'EissdService.editStatusApplication',
+              idBitrix: lead.id,
+              idApplication: lead.application_id,
+              serviceInternet: serviceInternet,
+            });
+          } else if (serviceInternet.bitrixStatus == 'Заявка назначена') {
+            this.logger.log(`Заявка назначена. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
+              context: 'EissdService.editStatusApplication',
+              idBitrix: lead.id,
+              idApplication: lead.application_id,
+              serviceInternet: serviceInternet,
+            });
+            continue;
+          } else if (serviceInternet.bitrixStatus == 'Отработка заявок') {
+            this.bitrixService.editApplication(lead.id, undefined, lead.application_id, BitrixStatuses.toWorkingOff);
+            this.logger.log(`На отработку. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
+              context: 'EissdService.editStatusApplication',
+              idBitrix: lead.id,
+              idApplication: lead.application_id,
+              serviceInternet: serviceInternet,
+            });
+          } else if (serviceInternet.bitrixStatus == 'Отказ') {
+            this.bitrixService.editApplication(lead.id, serviceInternet.bitrixCause, lead.application_id, BitrixStatuses.toRefusal);
+            this.logger.log(`Отказ. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
+              context: 'EissdService.editStatusApplication',
+              idBitrix: lead.id,
+              idApplication: lead.application_id,
+              serviceInternet: serviceInternet,
+            });
+          } else if (serviceInternet.bitrixStatus == 'Клиент подключен') {
+            this.bitrixService.editApplication(lead.id, undefined, lead.application_id, BitrixStatuses.toConnected);
+            this.logger.log(`Клиент подключен. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
+              context: 'EissdService.editStatusApplication',
+              idBitrix: lead.id,
+              idApplication: lead.application_id,
+              serviceInternet: serviceInternet,
+            });
+          } else {
+            this.logger.error(`Ошибка в изменении статуса заявки в битрикс. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
+              context: 'EissdService.editStatusApplication',
+              idBitrix: lead.id,
+              idApplication: lead.application_id,
+              serviceInternet: serviceInternet,
+            });
+          }
+        } catch (error) {
+          this.logger.error(`Ошибка в изменении статуса заявки в битрикс. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
+            context: 'EissdService.editStatusApplication',
+            idBitrix: lead.id,
+            idApplication: lead.application_id,
+            error: error,
+          });
         }
       }
     }
@@ -298,7 +385,7 @@ export class EissdService implements OnModuleInit {
 
       // Получение тарифов
       let shpd: any, iptv: any;
-      if (this.mrfRegionList.includes(thv.infoAddress.regionId)) {
+      if (this.mrfRegions.includes(thv.infoAddress.regionId)) {
         shpd = await this.getSHPDtariffMRF(
           thv.infoAddress.regionId,
           thv.infoAddress.cityId,
@@ -396,7 +483,7 @@ export class EissdService implements OnModuleInit {
       throw Error('Ошибка в авторизации в Eissd: ' + error.message);
     }
   }
-  async getInfoApplication(id: string): Promise<any> {
+  async getStatusesApplication(id: string): Promise<StatusesApplicationI[]> {
     // Подготовка запроса
     const requestBody = `
       <GetSvcClassOrderStatusAgent>
@@ -404,6 +491,7 @@ export class EissdService implements OnModuleInit {
       </GetSvcClassOrderStatusAgent>
       `;
 
+    // Отправка запроса
     let response: string;
     try {
       response = await this.sendXMLRequest(requestBody);
@@ -418,8 +506,22 @@ export class EissdService implements OnModuleInit {
     } catch (error) {
       throw new Error('Ошибка в парсинге ответа: ' + error.message);
     }
+    const arrStatusesXML = parsXml.GetSvcClassOrderStatusAgent[0].taskStatusList[0].taskStatusListElement;
+    const result: StatusesApplicationI[] = [];
 
-    return parsXml;
+    for (let i = 0; i < arrStatusesXML.length; i++) {
+      result.push({
+        serviceId: arrStatusesXML[i].SvcClassId[0]._text[0],
+        serviceName: this.serviceIds[arrStatusesXML[i].SvcClassId[0]._text[0]],
+        statusId: arrStatusesXML[i].SvcClassStatus[0]._text[0],
+        statusName: this.statusIds[arrStatusesXML[i].SvcClassStatus[0]._text[0]],
+        statusReasonId: arrStatusesXML[i].SvcClassStatusReason ? arrStatusesXML[i].SvcClassStatusReason[0]._text[0] : null,
+        statusReasonName: arrStatusesXML[i].SvcClassStatusReason ? this.statusIdsReason[arrStatusesXML[i].SvcClassStatusReason[0]._text[0]].status_name : null,
+        bitrixStatus: arrStatusesXML[i].SvcClassStatusReason ? this.statusIdsReason[arrStatusesXML[i].SvcClassStatusReason[0]._text[0]].bitrix_status : null,
+        bitrixCause: arrStatusesXML[i].SvcClassStatusReason ? this.statusIdsReason[arrStatusesXML[i].SvcClassStatusReason[0]._text[0]].bitrix_cause : null,
+      });
+    }
+    return result;
   }
   /**
    * Функция для получения технической возможности и информации по адресу.
@@ -577,7 +679,7 @@ export class EissdService implements OnModuleInit {
         ? {
             TechName: result.TechName[0]._text[0],
             Res: result.Res[0]._text[0],
-            TechId: this.techId[result.TechName[0]._text[0]],
+            TechId: this.techIds[result.TechName[0]._text[0]],
             thv: true,
           }
         : { TechName: 'xDSL', Res: 'Y', TechId: '10035', thv: false };

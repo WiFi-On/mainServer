@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
@@ -8,6 +8,8 @@ import { BitrixContactData } from './interfaces/BitrixContactData.interface';
 import { BitrixDealData } from './interfaces/BitrixDealData.interface';
 import { BitrixReturnData } from './interfaces/BitrixReturnData.interface';
 import { BitrixReturnInfoData } from './interfaces/BitrixReturnInfoData.interface';
+import { BitrixStatuses } from './interfaces/BitrixStatuses.interface';
+import axios from 'axios';
 
 @Injectable()
 export class BitrixService {
@@ -64,7 +66,7 @@ export class BitrixService {
 
       return response.data;
     } catch (error) {
-      throw new HttpException(`Failed to create contact: ${error.message}`, HttpStatus.BAD_REQUEST);
+      throw new Error('Ошибка в создании контакта в битрикс: ' + error.message);
     }
   }
   /**
@@ -106,7 +108,7 @@ export class BitrixService {
 
       return response.data;
     } catch (error) {
-      throw new HttpException(`Failed to create deal: ${error.message}`, HttpStatus.BAD_REQUEST);
+      throw new Error('Ошибка в создании сделки в битрикс: ' + error.message);
     }
   }
   /**
@@ -121,11 +123,11 @@ export class BitrixService {
    * const deals = await getDealsOnProviders(52);
    * console.log(deals);
    */
-  async getDealsOnProviders(idProvider?: number): Promise<BitrixReturnInfoData[]> {
+  async getDeals(status: BitrixStatuses, idProvider?: number): Promise<BitrixReturnInfoData[]> {
     // Ростелеком idBitrixProvider - 52
     const url = `${this.bitrixHook}/${this.methodGetDeals}`;
     const params: Record<string, any> = {
-      'filter[STAGE_ID]': 'PREPAYMENT_INVOICE',
+      'filter[STAGE_ID]': status,
       'select[]': ['*', 'UF_*'],
     };
 
@@ -142,15 +144,9 @@ export class BitrixService {
           headers: { 'Content-Type': 'application/json' },
         }),
       );
-
-      if (!response.data || !response.data.result) {
-        throw new HttpException('No deals found for the given provider ID', HttpStatus.NOT_FOUND);
-      }
       const resultResponse = response.data.result;
-      if (!resultResponse) {
-        throw new HttpException('Заявок нет', HttpStatus.NOT_FOUND);
-      }
-      const result = [];
+
+      const result: BitrixReturnInfoData[] = [];
       for (let i = 0; i < resultResponse.length; i++) {
         result.push({
           fio: resultResponse[i].UF_CRM_1697357613372,
@@ -159,157 +155,44 @@ export class BitrixService {
           id: resultResponse[i].ID,
           provider_id: resultResponse[i].UF_CRM_1697294773665,
           comment: resultResponse[i].COMMENTS,
+          application_id: resultResponse[i].UF_CRM_1697462646338,
         });
       }
       return result;
-    } catch {
-      return [];
+    } catch (error) {
+      throw new Error('Ошибка в получении заявок из битрикса: ' + error.message);
     }
   }
-  /**
-   * Переводит сделку в статус "Назначено" с добавлением комментария.
-   *
-   * @param {string} id_deal - Идентификатор сделки.
-   * @param {string} comment - Комментарий для сделки.
-   * @returns {Promise<BitrixReturnData>} Результат обновления сделки.
-   *
-   * @throws {HttpException} Выбрасывается в случае ошибки HTTP-запроса с описанием причины.
-   *
-   * @example
-   * const result = await moveToAppointed('12345', 'Назначено ответственному');
-   * console.log(result);
-   */
-  async moveToAppointed(id_deal: string, comment: string, id_application?: string): Promise<BitrixReturnData> {
+  async editApplication(id_deal: string, comment?: string, id_application?: string, status?: BitrixStatuses): Promise<void> {
     const url = `${this.bitrixHook}/${this.dealUpdate}`;
-    const params = {
+
+    // Формируем параметры запроса
+    const params: Record<string, string | number> = {
       ID: id_deal,
-      'fields[STAGE_ID]': 'EXECUTING',
-      ...(id_application ? { 'fields[UF_CRM_1697462646338]': id_application } : {}),
-      'fields[COMMENTS]': comment,
     };
-    const fullUrl = `${url}?${querystring.stringify(params)}`;
+
+    if (status) {
+      params['fields[STAGE_ID]'] = status;
+    }
+    if (id_application) {
+      params['fields[UF_CRM_1697462646338]'] = id_application;
+    }
+    if (comment) {
+      params['fields[COMMENTS]'] = comment;
+    }
 
     try {
-      const response = await firstValueFrom(
-        this.httpService.get(fullUrl, {
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      );
+      // Отправляем GET-запрос через axios
+      const response = await axios.get(url, {
+        headers: { 'Content-Type': 'application/json' },
+        params,
+      });
+
+      // Получаем данные из ответа
       const resultResponse = response.data.result;
       return resultResponse;
     } catch (error) {
-      throw new HttpException(`Failed to fetch deals: ${error.message}`, HttpStatus.BAD_REQUEST);
+      throw new Error(`Ошибка при обновлении сделки в битрикс: ${error.message}`);
     }
   }
-  /**
-   * Переводит сделку в статус "На сохранении" с добавлением комментария.
-   *
-   * @param {string} id_deal - Идентификатор сделки.
-   * @param {string} comment - Комментарий для сделки.
-   * @returns {Promise<BitrixReturnData>} Результат обновления сделки.
-   *
-   * @throws {HttpException} Выбрасывается в случае ошибки HTTP-запроса с описанием причины.
-   *
-   * @example
-   * const result = await moveToInStorage('12345', 'Перемещено на склад');
-   * console.log(result);
-   */
-  async moveToInStorage(id_deal: string, comment: string): Promise<BitrixReturnData> {
-    const url = `${this.bitrixHook}/${this.dealUpdate}`;
-    const params = {
-      ID: id_deal,
-      'fields[STAGE_ID]': 4,
-      'fields[COMMENTS]': comment,
-    };
-    const fullUrl = `${url}?${querystring.stringify(params)}`;
-
-    try {
-      const response = await firstValueFrom(
-        this.httpService.get(fullUrl, {
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      );
-      const resultResponse = response.data.result;
-      return resultResponse;
-    } catch (error) {
-      throw new HttpException(`Failed to fetch deals: ${error.message}`, HttpStatus.BAD_REQUEST);
-    }
-  }
-  /**
-   * Переводит сделку в статус "Ошибка" с добавлением комментария.
-   *
-   * @param {string} id_deal - Идентификатор сделки.
-   * @param {string} comment - Комментарий для сделки.
-   * @returns {Promise<BitrixReturnData>} Результат обновления сделки.
-   *
-   * @throws {HttpException} Выбрасывается в случае ошибки HTTP-запроса с описанием причины.
-   *
-   * @example
-   * const result = await moveToError('12345', 'Ошибка при выполнении');
-   * console.log(result);
-   */
-  async moveToError(id_deal: string, comment: string): Promise<BitrixReturnData> {
-    const url = `${this.bitrixHook}/${this.dealUpdate}`;
-    const params = {
-      ID: id_deal,
-      'fields[STAGE_ID]': 'UC_F4OKAL',
-      'fields[COMMENTS]': comment,
-    };
-    const fullUrl = `${url}?${querystring.stringify(params)}`;
-
-    try {
-      const response = await firstValueFrom(
-        this.httpService.get(fullUrl, {
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      );
-      const resultResponse = response.data.result;
-      return resultResponse;
-    } catch (error) {
-      throw new HttpException(`Failed to fetch deals: ${error.message}`, HttpStatus.BAD_REQUEST);
-    }
-  }
-  /**
-   * Редактирует комментарий к сделке в системе Bitrix24.
-   *
-   * @param {string} id_deal - Уникальный идентификатор сделки.
-   * @param {string} comment - Новый комментарий для обновления сделки.
-   * @returns {Promise<void>} Промис без возвращаемого значения (void).
-   *
-   * @throws {HttpException} Выбрасывается в случае ошибки HTTP-запроса с описанием причины.
-   *
-   * @example
-   * try {
-   *   await editComment('12345', 'Обновленный комментарий');
-   *   console.log('Комментарий обновлен');
-   * } catch (error) {
-   *   console.error(error.message);
-   * }
-   */
-  async editComment(id_deal: string, comment: string): Promise<void> {
-    const url = `${this.bitrixHook}/${this.dealUpdate}`;
-    const params = {
-      ID: id_deal,
-      'fields[COMMENTS]': comment,
-    };
-    const fullUrl = `${url}?${querystring.stringify(params)}`;
-
-    try {
-      const response = await firstValueFrom(
-        this.httpService.get(fullUrl, {
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      );
-      const resultResponse = response.data.result;
-      return resultResponse;
-    } catch (error) {
-      throw new HttpException(`Failed to fetch deals: ${error.message}`, HttpStatus.BAD_REQUEST);
-    }
-  }
-  // TODO пересмотреть создание, изменение заявок.
-  async getIdApplication() {}
-  async moveToConnected() {}
-  async moveToRefusal() {}
-  async moveToPotential() {}
-  async moveToWorkingOff() {}
 }

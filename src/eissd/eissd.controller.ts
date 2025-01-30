@@ -43,7 +43,7 @@ export class EissdController {
   }
   @Get('testInfoApplication')
   async testInfoApplication() {
-    const result = await this.EissdService.getInfoApplication('1100388451857');
+    const result = await this.EissdService.getStatusesApplication('1100388451857');
     return result;
   }
   // @Get('testTHV')
