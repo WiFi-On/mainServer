@@ -16,6 +16,7 @@ import { BitrixModule } from './bitrix/bitrix.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { EissdModule } from './eissd/eissd.module';
 import { ScheduleModule as ScheduleModuleNest } from '@nestjs/schedule';
+import { SchedulerModule } from './scheduler/scheduler.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { ScheduleModule as ScheduleModuleNest } from '@nestjs/schedule';
     BitrixModule,
     ScheduleModule,
     EissdModule,
+    SchedulerModule,
   ],
   providers: [],
 })

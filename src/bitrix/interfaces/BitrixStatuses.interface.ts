@@ -6,5 +6,5 @@ export enum BitrixStatuses {
   toRefusal = 'LOSE',
   toPotential = 6,
   toWorkingOff = 5,
-  toSent = 'PREPARATION',
+  toSent = 'PREPAYMENT_INVOICE',
 }

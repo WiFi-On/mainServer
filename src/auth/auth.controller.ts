@@ -19,19 +19,24 @@ export class AuthController {
   @Post('login')
   @UseGuards(LocalAuthGuard)
   async login(@Request() req, @Response() res): Promise<void> {
+    const clientIp = req.ip || req.socket.remoteAddress;
+    const requestPath = req.originalUrl;
+    const startTime = Date.now();
+
     try {
       const { token } = await this.authService.login(req.user);
 
       if (!token) {
-        this.logger.error('Не удалось сгенерировать токен для пользователя.');
+        this.logger.error('Не удалось сгенерировать токен для пользователя.', { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
         return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
           message: 'Не удалось сгенерировать токен. Попробуйте позже.',
         });
       }
 
+      this.logger.log('Токен успешно получен.', { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
       return res.status(HttpStatus.OK).json(new LoginResponseDto(token));
     } catch (error) {
-      this.logger.error('Ошибка входа пользователя.', error.stack);
+      this.logger.error('Ошибка при получении токена.', { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс`, error: error.message });
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         message: 'Произошла ошибка при обработке вашего запроса.',
       });
@@ -41,20 +46,30 @@ export class AuthController {
   @ApiOperation({ summary: 'Регистрация нового пользователя и получение токена.' })
   @ApiCreatedResponse({ description: 'Пользователь зарегистрирован и токен успешно получен.', type: LoginResponseDto })
   @Post('register')
-  async register(@Body() body: { email: string; password: string }, @Response() res: Res): Promise<any> {
+  async register(@Request() req, @Body() body: { email: string; password: string }, @Response() res: Res): Promise<any> {
+    const clientIp = req.ip || req.socket.remoteAddress;
+    const requestPath = req.originalUrl;
+    const startTime = Date.now();
+
     try {
       const { token } = await this.authService.register(body.email, body.password);
 
       if (!token) {
-        this.logger.error('Не удалось сгенерировать токен после успешной регистрации.');
+        this.logger.error('Не удалось сгенерировать токен для пользователя.', { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
         return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
           message: 'Не удалось сгенерировать токен. Попробуйте позже.',
         });
       }
 
+      this.logger.log('Пользователь зарегистрирован и токен успешно получен.', { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
       return res.status(HttpStatus.CREATED).json(new LoginResponseDto(token));
     } catch (error) {
-      this.logger.error('Ошибка при регистрации пользователя.', error.stack);
+      this.logger.error('Ошибка при получении токена для пользователя.', {
+        ip: clientIp,
+        path: requestPath,
+        time: `${Date.now() - startTime} мс`,
+        error: error.message,
+      });
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         message: 'Произошла ошибка при обработке вашего запроса.',
       });

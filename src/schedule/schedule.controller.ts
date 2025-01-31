@@ -1,5 +1,6 @@
 // nest
-import { Body, Headers, Controller, Post, HttpException, Get, Query, Delete, Put, UseGuards } from '@nestjs/common';
+import { Body, Logger, Headers, Controller, Post, Req, HttpException, Get, Query, Delete, Put, UseGuards } from '@nestjs/common';
+import { Request } from 'express';
 // Validations
 import { AddActiveDayDto } from './dtos/active_days.dto';
 import { EditActiveDayDto } from './dtos/editActiveDay.dto';
@@ -16,72 +17,108 @@ import { CheckUserPermission } from './guards/CheckUserPermission.guard';
 
 @Controller('api/v1/schedule')
 export class ScheduleController {
+  private readonly logger = new Logger(ScheduleController.name);
   constructor(private readonly scheduleService: ScheduleService) {}
 
   @UseGuards(WebAppSignature)
   @Get()
-  async getSchedule(@Query() query: GetScheduleDto, @Headers('x-init-data') initData: string): Promise<scheduleInterface> {
+  async getSchedule(@Query() query: GetScheduleDto, @Headers('x-init-data') initData: string, @Req() request: Request): Promise<scheduleInterface> {
+    const clientIp = request.ip || request.socket.remoteAddress;
+    const requestPath = request.originalUrl;
+    const startTime = Date.now();
+
     try {
-      return this.scheduleService.getActiveDays(initData, query);
+      const result = await this.scheduleService.getActiveDays(initData, query);
+      this.logger.log(`Рабочие дни получены.`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      return result;
     } catch (error) {
+      this.logger.error(`Ошибка при получении рабочих дней`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс`, error: error.message });
       throw new HttpException('Error server: ' + error.message, 500);
     }
   }
 
   @Post('checkUser')
-  async checkUser(
-    @Body() body: CheckInitDataDto, // Получаем telegramId из тела запроса
-  ): Promise<{ result: string | null }> {
+  async checkUser(@Body() body: CheckInitDataDto, @Req() request: Request): Promise<{ result: string | null }> {
+    const clientIp = request.ip || request.socket.remoteAddress;
+    const requestPath = request.originalUrl;
+    const startTime = Date.now();
+
     try {
       const result = await this.scheduleService.isUserExist(body.initData);
       const role = result ? ((await this.scheduleService.isAdmin(body.initData)) ? 'admin' : 'user') : null;
 
+      this.logger.log(`Проверка пользователя выполнена.`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
       return { result: role };
     } catch (error) {
+      this.logger.error(`Ошибка при проверке пользователя`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс`, error: error.message });
       throw new HttpException('Error server: ' + error.message, 500);
     }
   }
 
   @UseGuards(WebAppSignature)
   @Post('add/WorkDay')
-  async addActiveDay(@Body() body: AddActiveDayDto, @Headers('x-init-data') initData: string): Promise<any> {
+  async addActiveDay(@Body() body: AddActiveDayDto, @Headers('x-init-data') initData: string, @Req() request: Request): Promise<any> {
+    const clientIp = request.ip || request.socket.remoteAddress;
+    const requestPath = request.originalUrl;
+    const startTime = Date.now();
+
     try {
       const activeDay = await this.scheduleService.addActiveDay(initData, body.date, body.startTime, body.endTime, body.officeWork);
+      this.logger.log(`Рабочий день успешно добавлен`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
       return activeDay;
     } catch (error) {
+      this.logger.error(`Ошибка при добавлении рабочего дня`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс`, error: error.message });
       throw new HttpException('Error server: ' + error.message, 500);
     }
   }
 
   @UseGuards(WebAppSignature, CheckUserPermission)
   @Delete('delete/WorkDay')
-  async delActiveDay(@Body() body: DeleteActiveDayDto): Promise<any> {
+  async delActiveDay(@Body() body: DeleteActiveDayDto, @Req() request: Request): Promise<any> {
+    const clientIp = request.ip || request.socket.remoteAddress;
+    const requestPath = request.originalUrl;
+    const startTime = Date.now();
+
     try {
       const result = await this.scheduleService.deleteActiveDay(body.id);
+      this.logger.log(`Рабочий день успешно удален`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
       return result;
     } catch (error) {
+      this.logger.error(`Ошибка при удалении рабочего дня`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс`, error: error.message });
       throw new HttpException('Error server: ' + error.message, 500);
     }
   }
 
   @UseGuards(WebAppSignature, CheckUserPermission)
   @Put('update/WorkDay')
-  async editWorkDay(@Body() body: EditActiveDayDto): Promise<any> {
+  async editWorkDay(@Body() body: EditActiveDayDto, @Req() request: Request): Promise<any> {
+    const clientIp = request.ip || request.socket.remoteAddress;
+    const requestPath = request.originalUrl;
+    const startTime = Date.now();
+
     try {
       const activeDay = await this.scheduleService.editWorkDay(body);
+      this.logger.log(`Рабочий день успешно изменен`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
       return activeDay;
     } catch (error) {
+      this.logger.error(`Ошибка в изменении рабочего дня`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс`, error: error.message });
       throw new HttpException('Error server: ' + error.message, 500);
     }
   }
 
   @UseGuards(Admin, WebAppSignature)
   @Put('update/statusWorkDay')
-  async editStatusWorkDay(@Body() body: EditStatusActiveDayDto): Promise<any> {
+  async editStatusWorkDay(@Body() body: EditStatusActiveDayDto, @Req() request: Request): Promise<any> {
+    const clientIp = request.ip || request.socket.remoteAddress;
+    const requestPath = request.originalUrl;
+    const startTime = Date.now();
+
     try {
       const activeDay = await this.scheduleService.editStatusWorkDay(body);
+      this.logger.log(`Статус рабочего дня успешно изменен`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
       return activeDay;
     } catch (error) {
+      this.logger.error(`Ошибка в изменении статуса рабочего дня`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс`, error: error.message });
       throw new HttpException('Error server: ' + error.message, 500);
     }
   }

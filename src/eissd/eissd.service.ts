@@ -1,8 +1,7 @@
 // nest
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { Cron } from '@nestjs/schedule';
 import { OnModuleInit } from '@nestjs/common';
 // node
 import axios, { AxiosResponse } from 'axios';
@@ -17,17 +16,14 @@ import { DistrictRepository } from '../db2/repositories/districts.repository';
 import { StreetRepository } from '../db2/repositories/streets.repository';
 import { HouseRepository } from '../db2/repositories/houses.repository';
 import { ResultThvEissdI, ReturnDataConnectionPosI } from './interfaces/thv.interface';
-import { BitrixService } from '../bitrix/bitrix.service';
 import tariffMrfI from './interfaces/tariffMrf.interface';
 import tariffI from './interfaces/tariff.interface';
 import OptionI from './interfaces/option.interface';
 import tariffSimI from './interfaces/tariffSim.interface';
-import { BitrixStatuses } from 'src/bitrix/interfaces/BitrixStatuses.interface';
 import { StatusesApplicationI } from './interfaces/statusesApplication.interface';
 
 @Injectable()
 export class EissdService implements OnModuleInit {
-  private readonly logger = new Logger(EissdService.name);
   private readonly pathKeyProduct: string;
   private readonly pathCertProduct: string;
   private readonly pathKeyDev: string;
@@ -46,7 +42,6 @@ export class EissdService implements OnModuleInit {
     private readonly streetRepository: StreetRepository,
     private readonly houseRepository: HouseRepository,
     private readonly httpService: HttpService,
-    private readonly bitrixService: BitrixService,
   ) {
     this.pathKeyProduct = this.configService.get<string>('EISSD_KEY_PRODUCT');
     this.pathCertProduct = this.configService.get<string>('EISSD_CERT_PRODUCT');
@@ -215,143 +210,9 @@ export class EissdService implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     if (this.enviroment === 'prod') {
       this.sessionId = await this.authEissd();
-      await this.creatingApplications();
     }
   }
 
-  /**
-   * Главная функция, которая запускается каждые 2 минуты для заведения заявок из колоник в bitrix.
-   * Если что это взаимодействие с api, которое доступно только внутри сайта eissd.
-   * Пришлоль брать ручки от туда и с ними творить чудеса, из за того что открытое апи для взаимодействия работает через жопу. И поддержка нулевая.
-   * Если придется что то улучшать, нужно будет заходить на сайт и через браузер взять нужные ручки.
-   * @returns {Promise<void>} Данные, возвращаемые системой Bitrix24 при успешном создании контакта.
-   */
-  @Cron('*/2 * * * *')
-  async creatingApplications(): Promise<void> {
-    if (this.enviroment === 'prod') {
-      // Получаем заявки по ростелекому из битрикса
-      const leadsBitrixRtk = await this.bitrixService.getDeals(BitrixStatuses.toSent, 52);
-      for (const lead of leadsBitrixRtk) {
-        try {
-          // Проверяем техническую возможность
-          const thv = await this.checkTHV(lead.address);
-          // Если техническая возможность есть, то заводим.
-          if (thv.result.thv) {
-            // Создаем заявку и отправляем в eissd
-            const application = await this.formingApplication(lead.number, lead.fio, thv);
-            // Если при создании заявки что то пошло не так, то возвращаем ошибку в битрикс в комментарии.
-            if (application.err) {
-              this.logger.error(`Заявка не заведена. Адрес: ${lead.address}. Причина: ${application.result}`, {
-                context: 'EissdService',
-                address: lead.address,
-                path: 'eissd/main',
-                result: application.result,
-              });
-              this.bitrixService.editApplication(lead.id, application.result, undefined, BitrixStatuses.toError);
-              continue;
-            }
-            // Если заявка заведена, то отправляем в битрикс
-            else if (!application.err && application.result.includes('Заявка назначена')) {
-              this.logger.log('Заявка назначена', { address: lead.address, path: 'eissd/main', result: application.result });
-              this.bitrixService.editApplication(lead.id, application.result, application.idApplication, BitrixStatuses.toAppointed);
-            }
-          }
-          // если нет технических возможности, то отправляем в битрикс с комментрарием проверить техническую возможность
-          else {
-            this.logger.error(`Нужно проверить тхв вручную. Адрес: ${lead.address}`, {
-              context: 'EissdService',
-              address: lead.address,
-              path: 'eissd/main',
-              result: thv.result.thv,
-            });
-            this.bitrixService.editApplication(lead.id, 'Нужно проверить тхв вручную', undefined, BitrixStatuses.toError);
-          }
-        } catch (error) {
-          this.logger.error(`Ошибка при создании заявки. Адрес: ${lead.address}. Причина: ${error.message}`, {
-            context: 'EissdService',
-            address: lead.address,
-            path: 'eissd/main',
-            result: error.message,
-          });
-          this.bitrixService.editApplication(lead.id, error.message, undefined, BitrixStatuses.toError);
-        }
-      }
-    }
-  }
-  async editStatusApplication(): Promise<void> {
-    if (this.enviroment === 'prod') {
-      const leadsBitrix = await this.bitrixService.getDeals(BitrixStatuses.toAppointed);
-      for (const lead of leadsBitrix) {
-        try {
-          const statusApplication = await this.getStatusesApplication(lead.id);
-          const serviceInternet = statusApplication.find((service) => service.serviceId === '1');
-          if (!serviceInternet.statusReasonId && serviceInternet.statusId === '37') {
-            this.logger.log(`Назначены дата и время инсталляции. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
-              context: 'EissdService.editStatusApplication',
-              idBitrix: lead.id,
-              idApplication: lead.application_id,
-              serviceInternet: serviceInternet,
-            });
-            continue;
-          } else if (!serviceInternet.statusReasonId && serviceInternet.statusId === '7') {
-            this.bitrixService.editApplication(lead.id, undefined, lead.application_id, BitrixStatuses.toConnected);
-            this.logger.log(`Клиент подключен. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
-              context: 'EissdService.editStatusApplication',
-              idBitrix: lead.id,
-              idApplication: lead.application_id,
-              serviceInternet: serviceInternet,
-            });
-          } else if (serviceInternet.bitrixStatus == 'Заявка назначена') {
-            this.logger.log(`Заявка назначена. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
-              context: 'EissdService.editStatusApplication',
-              idBitrix: lead.id,
-              idApplication: lead.application_id,
-              serviceInternet: serviceInternet,
-            });
-            continue;
-          } else if (serviceInternet.bitrixStatus == 'Отработка заявок') {
-            this.bitrixService.editApplication(lead.id, undefined, lead.application_id, BitrixStatuses.toWorkingOff);
-            this.logger.log(`На отработку. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
-              context: 'EissdService.editStatusApplication',
-              idBitrix: lead.id,
-              idApplication: lead.application_id,
-              serviceInternet: serviceInternet,
-            });
-          } else if (serviceInternet.bitrixStatus == 'Отказ') {
-            this.bitrixService.editApplication(lead.id, serviceInternet.bitrixCause, lead.application_id, BitrixStatuses.toRefusal);
-            this.logger.log(`Отказ. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
-              context: 'EissdService.editStatusApplication',
-              idBitrix: lead.id,
-              idApplication: lead.application_id,
-              serviceInternet: serviceInternet,
-            });
-          } else if (serviceInternet.bitrixStatus == 'Клиент подключен') {
-            this.bitrixService.editApplication(lead.id, undefined, lead.application_id, BitrixStatuses.toConnected);
-            this.logger.log(`Клиент подключен. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
-              context: 'EissdService.editStatusApplication',
-              idBitrix: lead.id,
-              idApplication: lead.application_id,
-              serviceInternet: serviceInternet,
-            });
-          } else {
-            this.logger.error(`Ошибка в изменении статуса заявки в битрикс. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
-              context: 'EissdService.editStatusApplication',
-              idBitrix: lead.id,
-              idApplication: lead.application_id,
-              serviceInternet: serviceInternet,
-            });
-          }
-        } catch (error) {
-          this.logger.error(`Ошибка в изменении статуса заявки в битрикс. Айди битрикс: ${lead.id}. Айди заявки: ${lead.application_id}.`, {
-            context: 'EissdService.editStatusApplication',
-            idBitrix: lead.id,
-            idApplication: lead.application_id,
-            error: error,
-          });
-        }
-      }
-    }
-  }
   /**
    * Формируем полностью заявку и отправляем ее.
    * 1) Получение технической возможности и информации по адресу. Техническая возможность - можно ли подключать клиента по адресу и по какой технологии.
