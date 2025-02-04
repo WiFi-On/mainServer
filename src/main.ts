@@ -1,82 +1,15 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import * as winston from 'winston';
-import { WinstonModule } from 'nest-winston';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'; // Импортируем необходимые модули
 import { ConfigService } from '@nestjs/config';
+import { LoggerService } from './logger/logger.service';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    logger: WinstonModule.createLogger({
-      transports: [
-        // Консольный транспорт
-        new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.timestamp({
-              format: 'YYYY-MM-DD HH:mm:ss.SSS',
-            }),
-            winston.format.colorize(),
-            winston.format.printf(({ timestamp, level, message, context, address, path, result }) => {
-              return `${timestamp} [${level}] ${message} ${JSON.stringify({
-                context,
-                address,
-                path,
-                result,
-              })}`;
-            }),
-          ),
-        }),
-        // Общий файл логов (все уровни от info и выше)
-        new winston.transports.File({
-          filename: 'logs/combined.log',
-          level: 'info',
-          format: winston.format.combine(
-            winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
-            winston.format.json({
-              replacer: (key, value) => {
-                if (value instanceof Error) {
-                  return {
-                    message: value.message,
-                    stack: value.stack,
-                    ...value,
-                  };
-                }
-                return value;
-              },
-            }),
-          ),
-        }),
-        // Файл только для информационных сообщений
-        new winston.transports.File({
-          filename: 'logs/info.log',
-          level: 'info',
-          format: winston.format.combine(winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }), winston.format.json()),
-          // filter: (log) => log.level === 'info',
-        }),
-        // Файл только для ошибок
-        new winston.transports.File({
-          filename: 'logs/errors.log',
-          level: 'error',
-          format: winston.format.combine(
-            winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
-            winston.format.json({
-              replacer: (key, value) => {
-                if (value instanceof Error) {
-                  return {
-                    message: value.message,
-                    stack: value.stack,
-                    ...value,
-                  };
-                }
-                return value;
-              },
-            }),
-          ),
-        }),
-      ],
-    }),
-  });
+  const app = await NestFactory.create(AppModule);
+
+  // Настройка логирования
+  const logger = app.get(LoggerService);
 
   // Получаем текущий режим
   const configService = app.get(ConfigService);
@@ -129,7 +62,7 @@ async function bootstrap() {
 
   // Запускаем приложение на порту 3010
   await app.listen(3010);
-  console.log(`Application is running on: ${await app.getUrl()}`);
+  logger.log(`Application is running on: ${await app.getUrl()}`, 'Bootstrap');
 }
 
 bootstrap();

@@ -219,10 +219,11 @@ export class ExcelService {
     for (let i = 0; i < data.length; i++) {
       const number = data[i][0].toString();
       const fio = data[i][1];
+      const { name, surname } = await this.eissdService.formatedFIO(fio);
       const address = data[i][2];
       try {
         const thv = await this.eissdService.checkTHV(address);
-        const result = await this.eissdService.formingApplication(number, fio, thv);
+        const result = await this.eissdService.formingApplication(number, name, surname, thv);
         data[i].push(result.result);
       } catch (error) {
         data[i].push(error.message);

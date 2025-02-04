@@ -1,5 +1,5 @@
 // Nest
-import { Controller, Get } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 
 // Services
 import { EissdService } from './eissd.service';
@@ -33,19 +33,19 @@ export class EissdController {
   //   }
   // }
 
-  @Get('getTHV')
-  async getTHV() {
-    return this.EissdService.checkTHV('Широтная 105 кв. 1');
-  }
-  @Get('testAuth')
-  async testAuth() {
-    return this.EissdService.authEissd();
-  }
-  @Get('testInfoApplication')
-  async testInfoApplication() {
-    const result = await this.EissdService.getStatusesApplication('1100388451857');
-    return result;
-  }
+  // @Get('getTHV')
+  // async getTHV() {
+  //   return this.EissdService.checkTHV('Широтная 105 кв. 1');
+  // }
+  // @Get('testAuth')
+  // async testAuth() {
+  //   return this.EissdService.authEissd();
+  // }
+  // @Get('testInfoApplication')
+  // async testInfoApplication() {
+  //   const result = await this.EissdService.getStatusesApplication('1100388451857');
+  //   return result;
+  // }
   // @Get('testTHV')
   // async testTHV() {
   //   return this.EissdService.checkTHV('Широтная 105 кв. 1');

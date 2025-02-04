@@ -234,7 +234,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [fio=''] - ФИО клиента.
    * @returns {Promise<BitrixReturnData>} Данные, возвращаемые системой Bitrix24 при успешном создании контакта.
    */
-  async formingApplication(number: string, fio: string, thv: ResultThvEissdI): Promise<{ err: boolean; result: string; idApplication?: string }> {
+  async formingApplication(number: string, name: string, surname: string, thv: ResultThvEissdI): Promise<{ err: boolean; result: string; idApplication?: string }> {
     const result = {
       err: false,
       result: '',
@@ -284,17 +284,7 @@ export class EissdService implements OnModuleInit {
         return result;
       }
 
-      let name = '';
-      let surname = '';
-      if (!fio) {
-        name = 'Александр';
-        surname = '-';
-      } else {
-        name = fio.split(' ')[0] ? fio.split(' ')[1] : '-';
-        surname = fio.split(' ')[1] ? fio.split(' ')[0] : 'Александр';
-      }
-
-      const phone = await this.validatePhoneNumber(number);
+      const phone = await this.formatedPhoneNumber(number);
       const eissdApplication = await this.sendAplication(name, surname, phone, [shpd, iptv, sim], orgId, thv);
 
       if (Object.keys(eissdApplication).length > 2) {
@@ -320,7 +310,7 @@ export class EissdService implements OnModuleInit {
    * Функция для получения куки для взаимодействия с ручками. Я как понял, нужно переавторизовываться раз в сутки.
    * @returns {Promise<string>} Возращает куку для взяимодействия с ручкамиа.
    */
-  async authEissd(): Promise<string> {
+  private async authEissd(): Promise<string> {
     const url = 'https://eissd.rt.ru/mod/auth/ajax/authentication/login';
     const formData = new URLSearchParams();
     formData.append('login', this.configService.get<string>('EISSD_LOGIN'));
@@ -573,7 +563,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [regionId=''] - регион. Пример - 01, 72, 50.
    * @returns {Promise<string>} Возвращает айди организации.
    */
-  async getOrgId(regionId: string): Promise<string> {
+  private async getOrgId(regionId: string): Promise<string> {
     const endpoint = 'https://eissd.rt.ru/ajax/orgs/get.default.org.by.region';
 
     try {
@@ -612,7 +602,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [techId=''] - айди технологии подключения.
    * @returns {Promise<tariffMrfI>} Возвращает айди организации.
    */
-  async getSHPDtariffMRF(regionId: string, cityId: string, streetId: string, houseId: string, flat: string, techId: string): Promise<tariffMrfI> {
+  private async getSHPDtariffMRF(regionId: string, cityId: string, streetId: string, houseId: string, flat: string, techId: string): Promise<tariffMrfI> {
     const endpoint = 'https://eissd.rt.ru/mpz/ajax/get_mrf_tariffs_list';
 
     try {
@@ -675,7 +665,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [techId=''] - айди технологии подключения.
    * @returns {Promise<tariffMrfI>} Возвращает
    */
-  async getIPTVtariffMRF(regionId: string, cityId: string, streetId: string, houseId: string, flat: string, techId: string): Promise<tariffMrfI> {
+  private async getIPTVtariffMRF(regionId: string, cityId: string, streetId: string, houseId: string, flat: string, techId: string): Promise<tariffMrfI> {
     const endpoint = 'https://eissd.rt.ru/mpz/ajax/get_mrf_tariffs_list';
 
     try {
@@ -736,7 +726,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [techId=''] - айди технологии подключения.
    * @returns {Promise<tariffI>} Возвращает айди организации.
    */
-  async getSHPDtariff(regionId: string, districtId: string, techId: string): Promise<tariffI> {
+  private async getSHPDtariff(regionId: string, districtId: string, techId: string): Promise<tariffI> {
     const endpoint = 'https://eissd.rt.ru/ajax/internet/get.tariff.list';
 
     try {
@@ -789,7 +779,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [techId=''] - айди технологии подключения.
    * @returns {Promise<tariffI>} Возвращает айди организации.
    */
-  async getIPTVtariff(regionId: string, districtId: string, techId: string): Promise<tariffI> {
+  private async getIPTVtariff(regionId: string, districtId: string, techId: string): Promise<tariffI> {
     const endpoint = 'https://eissd.rt.ru/ajax/iptv/get.tariff.list';
 
     try {
@@ -843,7 +833,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [techId=''] - айди технологии подключения.
    * @returns {Promise<OptionI>} Возвращает объект опции для тарифа.
    */
-  async getSHPDoptionsTariff(regionId: string, tariffId: string, techId: string): Promise<OptionI> {
+  private async getSHPDoptionsTariff(regionId: string, tariffId: string, techId: string): Promise<OptionI> {
     const endpoint = 'https://eissd.rt.ru/mpz/ajax/internet/tariff_options';
 
     try {
@@ -895,7 +885,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [tariffId=''] - айди тарифа.
    * @returns {Promise<OptionI>} Возвращает объект опции для тарифа.
    */
-  async getIPTVoptionsTariff(regionId: string, tariffId: string): Promise<OptionI> {
+  private async getIPTVoptionsTariff(regionId: string, tariffId: string): Promise<OptionI> {
     const endpoint = 'https://eissd.rt.ru/mpz/ajax/iptv/tariff_options';
 
     try {
@@ -953,7 +943,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [regionFullName=''] - полное название региона.
    * @returns {Promise<tariffSimI>} Возвращает объект опции для тарифа.
    */
-  async getSIMtariff(region: string, orgId: string, regionFullName: string): Promise<tariffSimI> {
+  private async getSIMtariff(region: string, orgId: string, regionFullName: string): Promise<tariffSimI> {
     const endpoint = 'https://eissd.rt.ru/ajax/mvno/get.tp.list';
     const mvnoRegions = {
       '66': 1,
@@ -1026,6 +1016,7 @@ export class EissdService implements OnModuleInit {
       '28': 11,
       '15': 71,
       '09': 35,
+      '14': 69,
     };
 
     try {
@@ -1084,7 +1075,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [eissdInfo=''] - Объект из функции для получения тхв, что бы брать от туда нужную инфу.
    * @returns {Promise<any>} Потому что там приходит огромнейший объект и иногда разный.
    */
-  async sendAplication(name: string, lastname: string, phone: string, tariffs: any[], orgId: string, eissdInfo: ResultThvEissdI): Promise<any> {
+  private async sendAplication(name: string, lastname: string, phone: string, tariffs: any[], orgId: string, eissdInfo: ResultThvEissdI): Promise<any> {
     const endpoint = 'https://eissd.rt.ru/sales/api/ajax/save-order';
 
     try {
@@ -1274,7 +1265,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [input=''] - Кривой номер телефона.
    * @returns {Promise<string>} - Возвращает корректный номер.
    */
-  async validatePhoneNumber(input: string): Promise<string | null> {
+  private async formatedPhoneNumber(input: string): Promise<string | null> {
     try {
       // Удаляем все пробелы, знаки `+`, `-`, `(`, `)` из номера
       const cleaned = input.replace(/[+\-\s()]/g, '');
@@ -1293,6 +1284,28 @@ export class EissdService implements OnModuleInit {
       return null;
     } catch (error) {
       throw new Error('Ошибка при валидации номера: ' + error.message);
+    }
+  }
+  async formatedFIO(input: string): Promise<{ name: string; surname: string }> {
+    try {
+      const result = {
+        name: 'Александр',
+        surname: '-',
+      };
+
+      if (!input) {
+        return result;
+      } else {
+        const arrFio = input.split(' ');
+        if (arrFio.length > 1) {
+          result.surname = arrFio[0];
+          result.name = arrFio[1];
+        } else {
+          result.name = arrFio[0];
+        }
+      }
+    } catch (error) {
+      throw new Error('Ошибка при валидации ФИО: ' + error.message);
     }
   }
 }

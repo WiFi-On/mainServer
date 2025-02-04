@@ -17,6 +17,7 @@ import { ScheduleModule } from './schedule/schedule.module';
 import { EissdModule } from './eissd/eissd.module';
 import { ScheduleModule as ScheduleModuleNest } from '@nestjs/schedule';
 import { SchedulerModule } from './scheduler/scheduler.module';
+import { LoggerModule } from './logger/logger.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { SchedulerModule } from './scheduler/scheduler.module';
     ScheduleModule,
     EissdModule,
     SchedulerModule,
+    LoggerModule,
   ],
   providers: [],
 })
