@@ -1293,17 +1293,15 @@ export class EissdService implements OnModuleInit {
         surname: '-',
       };
 
-      if (!input) {
-        return result;
+      const arrFio = input.split(' ');
+      if (arrFio.length > 1) {
+        result.surname = arrFio[0];
+        result.name = arrFio[1];
       } else {
-        const arrFio = input.split(' ');
-        if (arrFio.length > 1) {
-          result.surname = arrFio[0];
-          result.name = arrFio[1];
-        } else {
-          result.name = arrFio[0];
-        }
+        result.name = arrFio[0];
       }
+
+      return result;
     } catch (error) {
       throw new Error('Ошибка при валидации ФИО: ' + error.message);
     }

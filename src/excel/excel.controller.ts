@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Res, Req, Logger, HttpStatus, HttpException, UploadedFile, UseInterceptors, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Res, Req, HttpStatus, HttpException, UploadedFile, UseInterceptors, UseGuards } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ExcelService } from './excel.service';
@@ -9,12 +9,15 @@ import { Roles } from '../auth/decorators/role.decorator';
 import { IsActive } from '../auth/decorators/activeUser.decorator';
 import { PartnerLeadsValidation } from './validations/partnerLeads.validation';
 import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { LoggerService } from 'src/logger/logger.service';
 
 @ApiTags('Excel')
 @Controller('api/v1/excel')
 export class ExcelController {
-  private readonly logger = new Logger(ExcelController.name);
-  constructor(private readonly excelService: ExcelService) {}
+  constructor(
+    private readonly excelService: ExcelService,
+    private readonly logger: LoggerService,
+  ) {}
 
   @ApiOperation({ summary: 'Загрузка Excel-файла для полученея ТХВ по адресам. ' })
   @ApiOkResponse({ description: 'Excel-файл успешно загружен' })
@@ -26,12 +29,11 @@ export class ExcelController {
   @UseInterceptors(FileInterceptor('file')) // Используйте FileInterceptor для обработки загрузки
   async uploadExcel(@UploadedFile() file: Express.Multer.File, @Res() res: Response, @Req() request: Request): Promise<void> {
     const clientIp = request.ip || request.socket.remoteAddress;
-    const requestPath = request.originalUrl;
     const startTime = Date.now();
 
     try {
       if (!file) {
-        this.logger.error(`Файл не найден`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+        this.logger.error(`Файл не найден`, 'ExcelController/upload', 'Файл не найден', { ip: clientIp, time: `${Date.now() - startTime} мс` });
         throw new HttpException('Файл не найден', HttpStatus.BAD_REQUEST);
       }
 
@@ -43,9 +45,9 @@ export class ExcelController {
       res.setHeader('Content-Type', 'application/zip');
       res.send(archiveBuffer);
 
-      this.logger.log(`Excel-файл успешно загружен`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      this.logger.log(`Excel-файл успешно загружен`, 'ExcelController/upload', { ip: clientIp, time: `${Date.now() - startTime} мс` });
     } catch (error) {
-      this.logger.error(`Ошибка при загрузке Excel-файла`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс`, error: error.message });
+      this.logger.error(`Ошибка при загрузке Excel-файла`, 'ExcelController/upload', error.message, { ip: clientIp, time: `${Date.now() - startTime} мс` });
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -60,12 +62,11 @@ export class ExcelController {
   @UseInterceptors(FileInterceptor('file'))
   async eissdLeads(@UploadedFile() file: Express.Multer.File, @Res() res: Response, @Req() request: Request): Promise<void> {
     const clientIp = request.ip || request.socket.remoteAddress;
-    const requestPath = request.originalUrl;
     const startTime = Date.now();
 
     try {
       if (!file) {
-        this.logger.error(`Файл не найден`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+        this.logger.error(`Файл не найден`, 'ExcelController/eissdLeads', 'Файл не найден', { ip: clientIp, time: `${Date.now() - startTime} мс` });
         throw new HttpException('Файл не найден', HttpStatus.BAD_REQUEST);
       }
 
@@ -77,9 +78,9 @@ export class ExcelController {
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.send(archiveBuffer);
 
-      this.logger.log(`Excel-файл успешно загружен`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      this.logger.log(`Excel-файл успешно загружен`, 'ExcelController/eissdLeads', { ip: clientIp, time: `${Date.now() - startTime} мс` });
     } catch (error) {
-      this.logger.error(`Ошибка при загрузке Excel-файла`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс`, error: error.message });
+      this.logger.error(`Ошибка при загрузке Excel-файла`, 'ExcelController/eissdLeads', error.message, { ip: clientIp, time: `${Date.now() - startTime} мс` });
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -93,7 +94,6 @@ export class ExcelController {
   @UseGuards(JwtAuthGuard, ActiveGuard, RolesGuard) // Применение всех гвардов
   async partnerLeads(@Body() body: PartnerLeadsValidation, @Res() res: Response, @Req() request: Request): Promise<void> {
     const clientIp = request.ip || request.socket.remoteAddress;
-    const requestPath = request.originalUrl;
     const startTime = Date.now();
 
     try {
@@ -104,11 +104,11 @@ export class ExcelController {
       res.setHeader('Content-Disposition', 'attachment; filename=partner_leads.xlsx');
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
-      this.logger.log(`Excel-файл успешно выгружен`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      this.logger.log(`Excel-файл успешно выгружен`, 'ExcelController/partnerLeads', { ip: clientIp, time: `${Date.now() - startTime} мс` });
       // Отправляем буфер как ответ
       res.status(200).send(excelBuffer);
     } catch (error) {
-      this.logger.error(`Ошибка при выгрузке Excel-файла`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс`, error: error.message });
+      this.logger.error(`Ошибка при выгрузке Excel-файла`, 'ExcelController/partnerLeads', error.message, { ip: clientIp, time: `${Date.now() - startTime} мс` });
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

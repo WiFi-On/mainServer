@@ -1,5 +1,5 @@
 // Nest
-import { Controller, Get, Req, Query, NotFoundException, Logger } from '@nestjs/common';
+import { Controller, Get, Req, Query, NotFoundException } from '@nestjs/common';
 import { Request } from 'express';
 // Services
 import { AggregatorService } from './aggregator.service';
@@ -21,14 +21,15 @@ import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nest
 import { TariffDTO, NoTariffDTO, NoTariffsDTO } from './dtos/tariff.dto';
 import { ProviderDTO, NoProvidersDTO } from './dtos/provider.dto';
 import { DistrictInfoDTO, NoDistrictsDTO, NoDistrictDTO } from './dtos/district.dto';
+import { LoggerService } from 'src/logger/logger.service';
 
 @ApiTags('Aggregator')
 @Controller('api/v1/aggregator')
 export class AggregatorController {
-  private readonly logger = new Logger(AggregatorController.name);
-
-  constructor(private readonly aggregatorService: AggregatorService) {}
-
+  constructor(
+    private readonly aggregatorService: AggregatorService,
+    private readonly logger: LoggerService,
+  ) {}
   // Утилиты
   private getIpFromHeaders(request: Request): string {
     return Array.isArray(request.headers['x-client-ip']) ? request.headers['x-client-ip'][0] : (request.headers['x-client-ip'] as string);
@@ -40,7 +41,6 @@ export class AggregatorController {
   @ApiNotFoundResponse({ description: 'Тариф не найден', type: NoTariffDTO })
   async getTariff(@Query() query: GetTariffValidation, @Req() request: Request): Promise<Tariff> {
     const clientIp = request.ip || request.socket.remoteAddress;
-    const requestPath = request.originalUrl;
     const startTime = Date.now();
 
     try {
@@ -52,29 +52,18 @@ export class AggregatorController {
 
       return result;
     } catch (error) {
-      this.logger.error(
-        `Ошибка в получении тарифаю. ID: ${query.id} PATH: ${requestPath}`,
-        {
-          id: query.id,
-          ip: clientIp,
-          path: requestPath,
-          time: `${Date.now() - startTime} мс`,
-          error: error.message,
-        },
-        'TariffService',
-      );
+      this.logger.error(`Ошибка в получении тарифаю. ID: ${query.id}`, 'TariffService/getTariff', error.message, {
+        id: query.id,
+        ip: clientIp,
+        time: `${Date.now() - startTime} мс`,
+      });
       throw error;
     } finally {
-      this.logger.log(
-        `Получение тарифа. ID: ${query.id} PATH: ${requestPath}`,
-        {
-          id: query.id,
-          ip: clientIp,
-          path: requestPath,
-          time: `${Date.now() - startTime} мс`,
-        },
-        'TariffService',
-      );
+      this.logger.log(`Получение тарифа. ID: ${query.id}`, 'TariffService/getTariff', {
+        id: query.id,
+        ip: clientIp,
+        time: `${Date.now() - startTime} мс`,
+      });
     }
   }
 
@@ -87,7 +76,6 @@ export class AggregatorController {
   @ApiNotFoundResponse({ description: 'Тарифы не найдены', type: NoTariffsDTO })
   async getTariffsOnAddress(@Query() query: GetTariffsOnAddressValidation, @Req() request: Request): Promise<Tariff[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
-    const requestPath = request.originalUrl;
     const startTime = Date.now(); // Время начала выполнения
     const { address, providers } = query;
 
@@ -95,19 +83,23 @@ export class AggregatorController {
       const result = await this.aggregatorService.getTariffsOnAddressByAddress(address, providers);
 
       if (!result.length) {
-        this.logger.error(`Тарифов по адресу не найдено. Address: ${address}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+        this.logger.error(`Тарифов по адресу не найдено. Address: ${address}`, 'AggregatorController/getTariffsOnAddress', 'Тарифов по адресу не найдено', {
+          ip: clientIp,
+          time: `${Date.now() - startTime} мс`,
+        });
         throw new NotFoundException(`Тарифов по адресу не найдено. ADDRESS: ${address}`);
       }
 
-      this.logger.log(`Тарифов по адресу найдены. ADDRESS: ${address}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      this.logger.log(`Тарифов по адресу найдены. ADDRESS: ${address}`, 'aggregatorController/getTariffsOnAddress', {
+        ip: clientIp,
+        time: `${Date.now() - startTime} мс`,
+      });
 
       return result;
     } catch (error) {
-      this.logger.error(`Ошибка в получении тарифов по адресу. Address: ${address}`, {
+      this.logger.error(`Ошибка в получении тарифов по адресу. Address: ${address}`, 'aggregatorController/getTariffsOnAddress', error.message, {
         ip: clientIp,
-        path: requestPath,
         time: `${Date.now() - startTime} мс`,
-        error: error.message,
       });
       throw error;
     }
@@ -122,7 +114,6 @@ export class AggregatorController {
   @Get('/get/tariffs/onHashAddress')
   async getTariffsOnHashAddress(@Query() query: GetTariffsOnHashAddressValidation, @Req() request: Request): Promise<Tariff[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
-    const requestPath = request.originalUrl;
     const startTime = Date.now();
     const { hash, providers } = query;
 
@@ -130,19 +121,23 @@ export class AggregatorController {
       const result = await this.aggregatorService.getTariffsOnAddressByHash(hash, providers);
 
       if (!result.length) {
-        this.logger.error(`Тарифов по хэш-адресу не найдено. Address: ${hash}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+        this.logger.error(`Тарифов по хэш-адресу не найдено. Address: ${hash}`, 'AggregatorController/getTariffsOnHashAddress', 'Тарифов по хэш-адресу не найдено', {
+          ip: clientIp,
+          time: `${Date.now() - startTime} мс`,
+        });
         throw new NotFoundException(`Тарифов по хэш-адресу не найдено. HASH: ${hash}`);
       }
 
-      this.logger.log(`Тарифы по хэш-адресу найдены. HASH: ${hash}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      this.logger.log(`Тарифы по хэш-адресу найдены. HASH: ${hash}`, 'AggregatorController/getTariffsOnHashAddress', {
+        ip: clientIp,
+        time: `${Date.now() - startTime} мс`,
+      });
 
       return result;
     } catch (error) {
-      this.logger.error(`Тарифов по хэш-адресу не найдено. HASH: ${hash}`, {
+      this.logger.error(`Тарифов по хэш-адресу не найдено. HASH: ${hash}`, 'AggregatorController/getTariffsOnHashAddress', error.message, {
         ip: clientIp,
-        path: requestPath,
         time: `${Date.now() - startTime} мс`,
-        error: error.message,
       });
       throw error;
     }
@@ -150,14 +145,8 @@ export class AggregatorController {
 
   @Get('/get/tariffs/onDistrict')
   @ApiOperation({ summary: 'Получение тарифов по населенному пункту' })
-  @ApiOkResponse({
-    description: 'Успешное получение тарифов',
-    type: [TariffDTO],
-  })
-  @ApiNotFoundResponse({ description: 'Тарифы не найдены', type: NoTariffsDTO })
   async getTariffsOnDistrict(@Query() query: GetTariffsOnDistrictValidation, @Req() request: Request): Promise<Tariff[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
-    const requestPath = request.originalUrl;
     const startTime = Date.now();
     const { district } = query;
 
@@ -165,23 +154,28 @@ export class AggregatorController {
       const result = await this.aggregatorService.getTariffsOnDistrict(district);
 
       if (!result.length) {
-        this.logger.error(`Тарифов по населенному пункту не найдено. DISTRICT: ${district}`, {
-          ip: clientIp,
-          path: requestPath,
-          time: `${Date.now() - startTime} мс`,
-        });
+        this.logger.error(
+          `Тарифов по населенному пункту не найдено. DISTRICT: ${district}`,
+          'AggregatorController/getTariffsOnDistrict',
+          'Тарифов по населенному пункту не найдено',
+          {
+            ip: clientIp,
+            time: `${Date.now() - startTime} мс`,
+          },
+        );
         throw new NotFoundException(`Тарифов по населенному пункту не найдено. DISTRICT: ${district}`);
       }
 
-      this.logger.log(`Тарифов по населенному пункту найдены. DISTRICT: ${district}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      this.logger.log(`Тарифов по населенному пункту найдены. DISTRICT: ${district}`, 'AggregatorController/getTariffsOnDistrict', {
+        ip: clientIp,
+        time: `${Date.now() - startTime} мс`,
+      });
 
       return result;
     } catch (error) {
-      this.logger.error(`Ошибка в получении тарифов по населенному пункту. DISTRICT: ${district}`, {
+      this.logger.error(`Ошибка в получении тарифов по населенному пункту. DISTRICT: ${district}`, 'AggregatorController/getTariffsOnDistrict', error.message, {
         ip: clientIp,
-        path: requestPath,
         time: `${Date.now() - startTime} мс`,
-        error: error.message,
       });
       throw error;
     }
@@ -196,24 +190,25 @@ export class AggregatorController {
   @ApiNotFoundResponse({ description: 'Тарифы не найдены', type: NoTariffsDTO })
   async getAllTariffsIds(@Req() request: Request): Promise<number[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
-    const requestPath = request.originalUrl;
     const startTime = Date.now();
 
     try {
       const result = await this.aggregatorService.getAllTariffsIds();
 
       if (!result.length) {
-        this.logger.error(`Айди тарифов не найдены. `, {
+        this.logger.error(`Айди тарифов не найдены. `, 'AggregatorController/getAllTariffsIds', 'Айди тарифов не найдены', {
           ip: clientIp,
-          path: requestPath,
           time: `${Date.now() - startTime} мс`,
         });
       }
-      this.logger.log(`Айди тарифов найдены.`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      this.logger.log(`Айди тарифов найдены.`, 'AggregatorController/getAllTariffsIds', { ip: clientIp, time: `${Date.now() - startTime} мс` });
 
       return result;
     } catch (error) {
-      this.logger.error(`Ошибка в получении айди тарифов.`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс`, error: error.message });
+      this.logger.error(`Ошибка в получении айди тарифов.`, 'AggregatorController/getAllTariffsIds', error.message, {
+        ip: clientIp,
+        time: `${Date.now() - startTime} мс`,
+      });
       throw error;
     }
   }
@@ -231,7 +226,6 @@ export class AggregatorController {
   })
   async getProvidersOnAddress(@Query() query: GetProvidersOnAddressValidation, @Req() request: Request): Promise<Provider[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
-    const requestPath = request.originalUrl;
     const startTime = Date.now();
     const { address, providers } = query;
 
@@ -239,19 +233,23 @@ export class AggregatorController {
       const result = await this.aggregatorService.getProvidersOnAddressByAddress(address, providers);
 
       if (!result.length) {
-        this.logger.error(`Провайдеры по адресу не найдены. ADDRESS: ${address}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+        this.logger.error(`Провайдеры по адресу не найдены. ADDRESS: ${address}`, 'AggregatorController/getProvidersOnAddress', 'Провайдеры по адресу не найдены', {
+          ip: clientIp,
+          time: `${Date.now() - startTime} мс`,
+        });
         throw new NotFoundException(`No providers. ADDRESS: ${address}`);
       }
 
-      this.logger.log(`Провайдеры по адресу найдены. ADDRESS: ${address}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      this.logger.log(`Провайдеры по адресу найдены. ADDRESS: ${address}`, 'AggregatorController/getProvidersOnAddress', {
+        ip: clientIp,
+        time: `${Date.now() - startTime} мс`,
+      });
 
       return result;
     } catch (error) {
-      this.logger.error(`Ошибка в получении провайдеров по адресу не найдены. ADDRESS: ${address}`, {
+      this.logger.error(`Ошибка в получении провайдеров по адресу не найдены. ADDRESS: ${address}`, 'AggregatorController/getProvidersOnAddress', error.message, {
         ip: clientIp,
-        path: requestPath,
         time: `${Date.now() - startTime} мс`,
-        error: error.message,
       });
       throw error;
     }
@@ -268,7 +266,6 @@ export class AggregatorController {
   })
   async getProvidersOnHashAddress(@Query() query: GetProvidersOnHashAddressValidation, @Req() request: Request): Promise<Provider[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
-    const requestPath = request.originalUrl;
     const startTime = Date.now();
     const { hashAddress, providers } = query;
 
@@ -276,18 +273,24 @@ export class AggregatorController {
       const result = await this.aggregatorService.getProvidersOnAddressByHash(hashAddress, providers);
 
       if (!result.length) {
-        this.logger.error(`Провайдеры по хэш адресу не найдены. HASH: ${hashAddress}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+        this.logger.error(
+          `Провайдеры по хэш адресу не найдены. HASH: ${hashAddress}`,
+          'AggregatorController/getProvidersOnHashAddress',
+          'Провайдеры по хэш адресу не найдены',
+          { ip: clientIp, time: `${Date.now() - startTime} мс` },
+        );
         throw new NotFoundException(`Провайдеры по хэш адресу не найдены. HASH: ${hashAddress}`);
       }
-      this.logger.log(`Провайдеры по хэш адресу найдены. HASH: ${hashAddress}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      this.logger.log(`Провайдеры по хэш адресу найдены. HASH: ${hashAddress}`, 'AggregatorController/getProvidersOnHashAddress', {
+        ip: clientIp,
+        time: `${Date.now() - startTime} мс`,
+      });
 
       return result;
     } catch (error) {
-      this.logger.error(`Ошибка в получении провайдеров по хэщ адресу. HASH: ${hashAddress}`, {
+      this.logger.error(`Ошибка в получении провайдеров по хэщ адресу. HASH: ${hashAddress}`, 'AggregatorController/getProvidersOnHashAddress', error.message, {
         ip: clientIp,
-        path: requestPath,
         time: `${Date.now() - startTime} мс`,
-        error: error.message,
       });
       throw error;
     }
@@ -304,7 +307,6 @@ export class AggregatorController {
   })
   async getProvidersOnDistrict(@Query() query: GetProvidersOnDistrictValidation, @Req() request: Request): Promise<Provider[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
-    const requestPath = request.originalUrl;
     const startTime = Date.now();
     const { district } = query;
 
@@ -312,23 +314,28 @@ export class AggregatorController {
       const result = await this.aggregatorService.getProvidersOnDistrict(district);
 
       if (!result.length) {
-        this.logger.error(`Провайдеры по населенному пункту не найдены. DISTRICT: ${district}`, {
-          ip: clientIp,
-          path: requestPath,
-          time: `${Date.now() - startTime} мс`,
-        });
+        this.logger.error(
+          `Провайдеры по населенному пункту не найдены. DISTRICT: ${district}`,
+          ' AggregatorController/getProvidersOnDistrict',
+          'Провайдеры по населенному пункту не найдены',
+          {
+            ip: clientIp,
+            time: `${Date.now() - startTime} мс`,
+          },
+        );
         throw new NotFoundException(`No providers. DISTRICT: ${district}`);
       }
 
-      this.logger.log(`Провайдеры по населенному пункту найдены. DISTRICT: ${district}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      this.logger.log(`Провайдеры по населенному пункту найдены. DISTRICT: ${district}`, 'AggregatorController/getProvidersOnDistrict', {
+        ip: clientIp,
+        time: `${Date.now() - startTime} мс`,
+      });
 
       return result;
     } catch (error) {
-      this.logger.error(`Ошибка в получении провайдеров по населенному пункту. DISTRICT: ${district}`, {
+      this.logger.error(`Ошибка в получении провайдеров по населенному пункту. DISTRICT: ${district}`, 'AggregatorController/getProvidersOnDistrict', error.message, {
         ip: clientIp,
-        path: requestPath,
         time: `${Date.now() - startTime} мс`,
-        error: error.message,
       });
       throw error;
     }
@@ -347,20 +354,25 @@ export class AggregatorController {
   })
   async getAllDistricts(@Req() request: Request): Promise<string[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
-    const requestPath = request.originalUrl;
     const startTime = Date.now();
 
     try {
       const result = await this.aggregatorService.getAllDistricts();
 
       if (!result.length) {
-        this.logger.error(`Населенные пункты не найдены.`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+        this.logger.error(`Населенные пункты не найдены.`, 'AggregatorController/getAllDistricts', 'Населенные пункты не найдены', {
+          ip: clientIp,
+          time: `${Date.now() - startTime} мс`,
+        });
       }
-      this.logger.log(`Населенные пункты найдены.`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      this.logger.log(`Населенные пункты найдены.`, 'AggregatorController/getAllDistricts', { ip: clientIp, time: `${Date.now() - startTime} мс` });
 
       return result;
     } catch (error) {
-      this.logger.error(`Ошибка в получении населенных пунктов.`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс`, error: error.message });
+      this.logger.error(`Ошибка в получении населенных пунктов.`, 'AggregatorController/getAllDistricts', error.message, {
+        ip: clientIp,
+        time: `${Date.now() - startTime} мс`,
+      });
       throw error;
     }
   }
@@ -376,20 +388,20 @@ export class AggregatorController {
   })
   async getDistrictOnIP(@Req() request: Request): Promise<string[]> {
     const clientIp = request.ip || request.socket.remoteAddress || this.getIpFromHeaders(request);
-    const requestPath = request.originalUrl;
     const startTime = Date.now();
 
     try {
       const result = await this.aggregatorService.getDistrictByIP(clientIp);
 
-      this.logger.log(`Населенный пункт найден. IP: ${clientIp} DISTRICT: ${result}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      this.logger.log(`Населенный пункт найден. IP: ${clientIp} DISTRICT: ${result}`, 'AggregatorController/getDistrictOnIP', {
+        ip: clientIp,
+        time: `${Date.now() - startTime} мс`,
+      });
       return result;
     } catch (error) {
-      this.logger.error(`Ошибка в получении населенного пункта по ip. IP: ${clientIp}`, {
+      this.logger.error(`Ошибка в получении населенного пункта по ip. IP: ${clientIp}`, 'AggregatorController/getDistrictOnIP', error.message, {
         ip: clientIp,
-        path: requestPath,
         time: `${Date.now() - startTime} мс`,
-        error: error.message,
       });
       throw error;
     }
@@ -406,29 +418,33 @@ export class AggregatorController {
   })
   async getDistrictInfo(@Query() query: GetDistrictInfoValidation, @Req() request: Request): Promise<any> {
     const clientIp = request.ip || request.socket.remoteAddress;
-    const requestPath = request.originalUrl;
     const startTime = Date.now();
     const { district } = query;
 
     try {
       const result = await this.aggregatorService.getInfoDistrictByEngName(district);
       if (!result) {
-        this.logger.error(`Информация о населенном пункте не найдена. DISTRICT: ${district}`, {
-          ip: clientIp,
-          path: requestPath,
-          time: `${Date.now() - startTime} мс`,
-        });
+        this.logger.error(
+          `Информация о населенном пункте не найдена. DISTRICT: ${district}`,
+          'AggregatorController/getDistrictInfo',
+          'Информация о населенном пункте не найдена',
+          {
+            ip: clientIp,
+            time: `${Date.now() - startTime} мс`,
+          },
+        );
       }
 
-      this.logger.log(`Информация о населенном пункте найдена. DISTRICT: ${district}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      this.logger.log(`Информация о населенном пункте найдена. DISTRICT: ${district}`, 'AggregatorController/getDistrictInfo', {
+        ip: clientIp,
+        time: `${Date.now() - startTime} мс`,
+      });
 
       return result;
     } catch (error) {
-      this.logger.error(`Ошибка в получении информации о населенном пункте. DISTRICT: ${district}`, {
+      this.logger.error(`Ошибка в получении информации о населенном пункте. DISTRICT: ${district}`, 'AggregatorController/getDistrictInfo', error.message, {
         ip: clientIp,
-        path: requestPath,
         time: `${Date.now() - startTime} мс`,
-        error: error.message,
       });
       throw error;
     }
@@ -447,7 +463,6 @@ export class AggregatorController {
   })
   async getDistrictEngNameByFiasID(@Query() query: GetDistrictEngNameByFiasIDValidation, @Req() request: Request): Promise<{ engNameDistrict: string }> {
     const clientIp = request.ip || request.socket.remoteAddress;
-    const requestPath = request.originalUrl;
     const startTime = Date.now();
     const { fiasID } = query;
 
@@ -455,17 +470,23 @@ export class AggregatorController {
       const result = await this.aggregatorService.getDistrictEngNameByFiasID(fiasID);
 
       if (!result) {
-        this.logger.error(`Наименование населенного пункта не найдено. FIASID: ${fiasID}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+        this.logger.error(
+          `Наименование населенного пункта не найдено. FIASID: ${fiasID}`,
+          'AggregatorController/getDistrictEngNameByFiasID',
+          'Наименование населенного пункта не найдено',
+          { ip: clientIp, time: `${Date.now() - startTime} мс` },
+        );
       }
-      this.logger.log(`Наименование населенного пункта найдено. FIASID: ${fiasID}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      this.logger.log(`Наименование населенного пункта найдено. FIASID: ${fiasID}`, 'AggregatorController/getDistrictEngNameByFiasID', {
+        ip: clientIp,
+        time: `${Date.now() - startTime} мс`,
+      });
 
       return result;
     } catch (error) {
-      this.logger.error(`Ошибка в получении наименования населенного пункта. FIASID: ${fiasID}`, {
+      this.logger.error(`Ошибка в получении наименования населенного пункта. FIASID: ${fiasID}`, 'AggregatorController/getDistrictEngNameByFiasID', error.message, {
         ip: clientIp,
-        path: requestPath,
         time: `${Date.now() - startTime} мс`,
-        error: error.message,
       });
       throw error;
     }
@@ -484,7 +505,6 @@ export class AggregatorController {
   })
   async getTarrifsRTKOnAddress(@Query() query: GetTarrifsRTKOnAddressValidation, @Req() request: Request): Promise<Tariff[] | boolean> {
     const clientIp = request.ip || request.socket.remoteAddress;
-    const requestPath = request.originalUrl;
     const startTime = Date.now();
     const { address } = query;
 
@@ -492,18 +512,24 @@ export class AggregatorController {
       const result = await this.aggregatorService.getTarrifsRTKOnAddress(address);
 
       if (!result) {
-        this.logger.error(`Тарифы ростелекома по адресу не найдены. ADDRESS: ${address}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+        this.logger.error(
+          `Тарифы ростелекома по адресу не найдены. ADDRESS: ${address}`,
+          'AggregatorController/getTarrifsRTKOnAddress',
+          'Тарифы ростелекома по адресу не найдены',
+          { ip: clientIp, time: `${Date.now() - startTime} мс` },
+        );
       }
 
-      this.logger.log(`Тарифы ростелекома по адресу найдены. ADDRESS: ${address}`, { ip: clientIp, path: requestPath, time: `${Date.now() - startTime} мс` });
+      this.logger.log(`Тарифы ростелекома по адресу найдены. ADDRESS: ${address}`, 'AggregatorController/getTarrifsRTKOnAddress', {
+        ip: clientIp,
+        time: `${Date.now() - startTime} мс`,
+      });
 
       return result;
     } catch (error) {
-      this.logger.error(`Ошибка в получении тарифов ростелекома по адресу. ADDRESS: ${address}`, {
+      this.logger.error(`Ошибка в получении тарифов ростелекома по адресу. ADDRESS: ${address}`, 'AggregatorController/getTarrifsRTKOnAddress', error.message, {
         ip: clientIp,
-        path: requestPath,
         time: `${Date.now() - startTime} мс`,
-        error: error.message,
       });
       throw error;
     }
