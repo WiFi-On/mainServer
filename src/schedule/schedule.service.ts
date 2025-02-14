@@ -13,6 +13,7 @@ import { EditStatusActiveDayDto } from './dtos/editStatusActiveDay.dto';
 // interfaces
 import InitDataObject from './interfaces/initDataObject.interface';
 
+// TODO добавить логирование ошибок
 @Injectable()
 export class ScheduleService {
   constructor(
@@ -134,39 +135,41 @@ export class ScheduleService {
   }
 
   async getActiveDays(initData: string, filters: GetScheduleDto): Promise<any> {
-    const { office, status, startDate, endDate, dateObject } = filters;
+    const { date, office, status, startDate, endDate } = filters;
+    const { user } = await this.parseInitDataToObject(initData);
+    const idEmployee = user.id;
+    const isAdmin = await this.isAdmin(initData);
 
-    if (!dateObject) {
-      const { user } = await this.parseInitDataToObject(initData);
-      const idEmployee = user.id;
-
-      const result = await this.employeeScheduleRepository.getActiveDays({
-        idEmployee,
+    if (isAdmin && !date) {
+      return await this.employeeScheduleRepository.getActiveDays({
         office,
         status,
         startDate,
         endDate,
       });
-
-      return result;
-    } else {
-      const result = await this.employeeScheduleRepository.getActiveDays({
+    } else if (isAdmin && date) {
+      return await this.employeeScheduleRepository.getActiveDays({
+        date: date,
         office,
         status,
         startDate,
         endDate,
       });
-
-      const groupedByDate = result.reduce((acc, schedule) => {
-        const date = schedule.date;
-        if (!acc[date]) {
-          acc[date] = [];
-        }
-        acc[date].push(schedule);
-        return acc;
-      }, {});
-
-      return groupedByDate;
     }
+
+    if (date) {
+      return await this.employeeScheduleRepository.getActiveDays({
+        date: date,
+        idEmployee,
+      });
+    }
+
+    return await this.employeeScheduleRepository.getActiveDays({
+      idEmployee,
+      office,
+      status,
+      startDate,
+      endDate,
+    });
   }
 }

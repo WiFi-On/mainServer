@@ -21,12 +21,23 @@ export class EmployeeScheduleRepository {
   async editActiveDay(id: number, startTime?: string, endTime?: string, office?: boolean): Promise<any> {
     return await this.activeDayRepository.update({ id }, { start_time: startTime, end_time: endTime, office });
   }
-  async getActiveDays(filters: { idEmployee?: number; office?: boolean; status?: string; startDate?: string; endDate?: string }): Promise<any> {
+  async getActiveDays(filters: {
+    idEmployee?: number;
+    date?: string;
+    office?: boolean;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<EmployeeSchedule[]> {
     const queryBuilder = this.activeDayRepository.createQueryBuilder('schedule');
 
     // Добавляем условия фильтрации
     if (filters.idEmployee) {
       queryBuilder.andWhere('schedule.user_id = :idEmployee', { idEmployee: filters.idEmployee });
+    }
+
+    if (filters.date) {
+      queryBuilder.andWhere('schedule.date = :date', { date: filters.date });
     }
 
     if (filters.office !== undefined) {

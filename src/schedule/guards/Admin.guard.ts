@@ -9,8 +9,10 @@ export class Admin implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const initData = request.headers['x-init-data'];
 
-    if (!(await this.scheduleService.isAdmin(initData))) {
-      throw new HttpException('Forbidden', 403);
+    const result = await this.scheduleService.isAdmin(initData);
+
+    if (!result) {
+      throw new HttpException('Unauthorized', 401);
     }
 
     return true;

@@ -25,7 +25,7 @@ export class ScheduleController {
 
   @UseGuards(WebAppSignature)
   @Get()
-  async getSchedule(@Query() query: GetScheduleDto, @Headers('x-init-data') initData: string, @Req() request: Request): Promise<scheduleInterface> {
+  async getSchedule(@Query() query: GetScheduleDto, @Headers('x-init-data') initData: string, @Req() request: Request): Promise<scheduleInterface[]> {
     const clientIp = request.ip || request.socket.remoteAddress;
     const startTime = Date.now();
 

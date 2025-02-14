@@ -43,6 +43,9 @@ export class SchedulerService {
         try {
           // Проверяем техническую возможность
           const thv = await this.eissdService.checkTHV(lead.address);
+          // В ростелекоме попросили указывать в любом случае такой тип подключения
+          thv.result.TechName = 'xDSL';
+          thv.result.TechId = '10035';
           // Если техническая возможность есть, то заводим.
           if (thv.result.thv) {
             const { name, surname } = await this.eissdService.formatedFIO(lead.fio);
