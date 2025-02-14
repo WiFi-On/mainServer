@@ -62,10 +62,17 @@ export class ScheduleController {
     const clientIp = request.ip || request.socket.remoteAddress;
     const startTime = Date.now();
 
+    console.log(body);
+
     try {
-      const activeDay = await this.scheduleService.addActiveDay(initData, body.date, body.startTime, body.endTime, body.officeWork);
+      const activeDay = await this.scheduleService.getActiveDays(initData, { date: body.date });
+      console.log(activeDay);
+      if (activeDay?.length > 0) {
+        throw new HttpException('Рабочий день уже существует', 400);
+      }
+      const newActiveDay = await this.scheduleService.addActiveDay(initData, body.date, body.startTime, body.endTime, body.officeWork);
       this.logger.log(`Рабочий день успешно добавлен`, 'ScheduleController/addActiveDay', { ip: clientIp, time: `${Date.now() - startTime} мс` });
-      return activeDay;
+      return newActiveDay;
     } catch (error) {
       this.logger.error(`Ошибка при добавлении рабочего дня`, 'ScheduleController/addActiveDay', error.message, {
         ip: clientIp,
