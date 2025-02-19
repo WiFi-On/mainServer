@@ -227,7 +227,7 @@ export class ExcelService {
         const thv = await this.eissdService.checkTHV(address);
         const result = await this.eissdService.formingApplication(number, name, surname, thv);
 
-        data[i].push(result.result);
+        data[i].push(result.result + ' ' + result.idApplication);
 
         this.logger.log(`Заявка заведена. Номер заявки: ${result.idApplication}. Результат: ${result.result}`, 'ExcelService/excelPartnerLeads', {
           idApplication: result.idApplication,
