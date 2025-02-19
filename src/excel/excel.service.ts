@@ -229,8 +229,12 @@ export class ExcelService {
 
         data[i].push(result.result + ' ' + result.idApplication);
 
-        this.logger.log(`Заявка заведена. Номер заявки: ${result.idApplication}. Результат: ${result.result}`, 'ExcelService/excelPartnerLeads', {
+        this.logger.log(`Заявка заведена. Номер заявки: ${result.idApplication}. Адрес: ${address}.`, 'ExcelService/excelPartnerLeads', {
           idApplication: result.idApplication,
+          result: result.result,
+          address: address,
+          fio: fio,
+          number: number,
         });
       } catch (error) {
         data[i].push(error.message);
