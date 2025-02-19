@@ -7,6 +7,7 @@ import { DadataService } from '../dadata/dadata.service';
 import { AggregatorService } from '../aggregator/aggregator.service';
 import { EmailService } from '../email/email.service';
 import { EissdService } from '../eissd/eissd.service';
+import { LoggerService } from '../logger/logger.service';
 
 @Injectable()
 export class ExcelService {
@@ -16,6 +17,7 @@ export class ExcelService {
     private readonly dadataService: DadataService,
     private readonly emailService: EmailService,
     private readonly eissdService: EissdService,
+    private readonly logger: LoggerService,
   ) {}
 
   // Функции для получения excel файла с тех.возможностями
@@ -210,11 +212,13 @@ export class ExcelService {
     const sheet = workbook.Sheets[sheetName];
 
     // Преобразование данных страницы в массив массивов
-    const data: string[][] = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+    const data: string[][] = xlsx.utils.sheet_to_json(sheet, { header: 1, blankrows: false });
 
-    // Удаляем заголовки, если они есть
-    data.shift();
+    console.log(data);
 
+    this.logger.log(`Получено заявок из екселя: ${data.length}`, 'ExcelService/excelPartnerLeads', {
+      resultCount: data.length,
+    });
     // Обработка данных
     for (let i = 0; i < data.length; i++) {
       const number = data[i][0].toString();
@@ -224,9 +228,18 @@ export class ExcelService {
       try {
         const thv = await this.eissdService.checkTHV(address);
         const result = await this.eissdService.formingApplication(number, name, surname, thv);
+
         data[i].push(result.result);
+
+        this.logger.log(`Заявка заведена. Номер заявки: ${result.idApplication}. Результат: ${result.result}`, 'ExcelService/excelPartnerLeads', {
+          idApplication: result.idApplication,
+        });
       } catch (error) {
         data[i].push(error.message);
+
+        this.logger.error(`Заявка не заведена. Причина: ${error.message}`, 'ExcelService/excelPartnerLeads', error.message, {
+          result: error.message,
+        });
       }
     }
 
