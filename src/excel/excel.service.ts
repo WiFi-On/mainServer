@@ -214,8 +214,6 @@ export class ExcelService {
     // Преобразование данных страницы в массив массивов
     const data: string[][] = xlsx.utils.sheet_to_json(sheet, { header: 1, blankrows: false });
 
-    console.log(data);
-
     this.logger.log(`Получено заявок из екселя: ${data.length}`, 'ExcelService/excelPartnerLeads', {
       resultCount: data.length,
     });
