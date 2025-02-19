@@ -1102,7 +1102,12 @@ export class EissdService implements OnModuleInit {
         personnalAccount: '',
         regionId: eissdInfo.infoAddress.regionId,
         requestContent: 'Техно выгоды. Интернет + ТВ + СВЯЗЬ Продавец: ИП Кривошеин ЯП',
-        params: [{ key: 'request_content', value: 'Техно выгоды. Интернет + ТВ + СВЯЗЬ Продавец: ИП Кривошеин ЯП' }],
+        params: [
+          {
+            key: 'request_content',
+            value: 'Техно выгоды. Интернет + ТВ + СВЯЗЬ Продавец: ИП Кривошеин ЯП',
+          },
+        ],
         requestNumber: '',
         workerId: '',
         wishDateCall: '',

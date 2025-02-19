@@ -1,11 +1,5 @@
 // src/aggregator/validations/tariffs.validations.ts
-import {
-  IsInt,
-  IsString,
-  IsOptional,
-  IsNotEmpty,
-  IsArray,
-} from 'class-validator';
+import { IsInt, IsString, IsOptional, IsNotEmpty, IsArray } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -14,7 +8,7 @@ export class GetTariffValidation {
     description: 'ID тарифа',
     example: 1,
   })
-  @IsInt()
+  @IsInt({ message: 'ID должен быть числом' })
   @IsNotEmpty({ message: 'ID не может быть пустым.' })
   @Transform(({ value }) => parseInt(value, 10), { toClassOnly: true })
   id: number;
@@ -22,7 +16,7 @@ export class GetTariffValidation {
 export class GetTariffsOnAddressValidation {
   @ApiProperty({
     description: 'Адрес',
-    example: 'г Тюмень, ул Широтная, д 105',
+    example: 'г Тюмень, ул Широтная, д 100',
   })
   @IsNotEmpty({ message: 'Адрес не может быть пустым.' })
   @IsString({ message: 'Адрес должен быть строкой.' })
