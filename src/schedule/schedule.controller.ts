@@ -84,12 +84,12 @@ export class ScheduleController {
 
   @UseGuards(WebAppSignature, CheckUserPermission)
   @Delete('delete/WorkDay')
-  async delActiveDay(@Body() body: DeleteActiveDayDto, @Req() request: Request): Promise<any> {
+  async delActiveDay(@Query() query: DeleteActiveDayDto, @Req() request: Request): Promise<any> {
     const clientIp = request.ip || request.socket.remoteAddress;
     const startTime = Date.now();
 
     try {
-      const result = await this.scheduleService.deleteActiveDay(body.id);
+      const result = await this.scheduleService.deleteActiveDay(query.id);
       this.logger.log(`Рабочий день успешно удален`, 'ScheduleController/delActiveDay', { ip: clientIp, time: `${Date.now() - startTime} мс` });
       return result;
     } catch (error) {
