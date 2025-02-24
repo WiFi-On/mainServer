@@ -18,8 +18,8 @@ export class EmployeeSchedule {
   @Column({ type: 'boolean', nullable: false })
   office: boolean;
 
-  @Column({ type: 'int', nullable: false })
-  user_id: number; // Храним внешний ключ
+  @Column({ type: 'varchar', nullable: false })
+  user_id: string; // Храним внешний ключ
 
   @ManyToOne(() => ScheduleUser, { nullable: false }) // Определяем связь с ScheduleUser
   @JoinColumn({ name: 'user_id' }) // Указываем, что внешний ключ связан с user_id

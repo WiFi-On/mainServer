@@ -22,7 +22,7 @@ export class EmployeeScheduleRepository {
     return await this.activeDayRepository.update({ id }, { start_time: startTime, end_time: endTime, office });
   }
   async getActiveDays(filters: {
-    idEmployee?: number;
+    idEmployee?: string;
     date?: string;
     office?: boolean;
     status?: string;
@@ -69,7 +69,7 @@ export class EmployeeScheduleRepository {
   async delActiveDay(id: number): Promise<any> {
     return await this.activeDayRepository.delete({ id });
   }
-  async getUserIdByTelegramId(telegramId: number): Promise<EmployeeSchedule> {
+  async getUserIdByTelegramId(telegramId: string): Promise<EmployeeSchedule> {
     return await this.activeDayRepository.findOne({ where: { user_id: telegramId } });
   }
 }

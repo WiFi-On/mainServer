@@ -11,7 +11,7 @@ export class ScheduleUsersRepository {
     private readonly scheduleUserRepository: Repository<ScheduleUser>,
   ) {}
 
-  async isUserExist(telegramId: number): Promise<ScheduleUser | null> {
+  async isUserExist(telegramId: string): Promise<ScheduleUser | null> {
     const user = await this.scheduleUserRepository.findOne({
       where: { telegram_id: telegramId }, // Убедитесь, что передаете правильный параметр
     });
