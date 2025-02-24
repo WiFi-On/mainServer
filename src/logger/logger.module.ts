@@ -1,9 +1,10 @@
 import { Module, Global } from '@nestjs/common';
 import * as winston from 'winston';
 import { WinstonModule } from 'nest-winston';
+import * as DailyRotateFile from 'winston-daily-rotate-file';
 import { LoggerService } from './logger.service';
 
-@Global() // Делаем модуль глобальным, чтобы его можно было использовать в любом месте приложения
+@Global()
 @Module({
   imports: [
     WinstonModule.forRoot({
@@ -17,13 +18,23 @@ import { LoggerService } from './logger.service';
             }),
           ),
         }),
-        new winston.transports.File({
-          filename: 'logs/combined.log',
+        new DailyRotateFile({
+          dirname: 'logs', // Папка для логов
+          filename: 'combined-%DATE%.log', // Имя файла с датой
+          datePattern: 'YYYY-MM-DD', // Формат даты
+          zippedArchive: true, // Опционально: архивировать старые логи
+          maxSize: '20m', // Максимальный размер файла
+          maxFiles: '14d', // Хранить логи за последние 14 дней
           level: 'info',
           format: winston.format.combine(winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }), winston.format.json()),
         }),
-        new winston.transports.File({
-          filename: 'logs/errors.log',
+        new DailyRotateFile({
+          dirname: 'logs',
+          filename: 'errors-%DATE%.log',
+          datePattern: 'YYYY-MM-DD',
+          zippedArchive: true,
+          maxSize: '20m',
+          maxFiles: '14d',
           level: 'error',
           format: winston.format.combine(winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }), winston.format.json()),
         }),
@@ -31,6 +42,6 @@ import { LoggerService } from './logger.service';
     }),
   ],
   providers: [LoggerService],
-  exports: [LoggerService, WinstonModule], // Экспортируем, чтобы использовать в других модулях
+  exports: [LoggerService, WinstonModule],
 })
 export class LoggerModule {}
