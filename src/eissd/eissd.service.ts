@@ -1291,8 +1291,10 @@ export class EissdService implements OnModuleInit {
     try {
       const result = {
         name: 'Александр',
-        surname: '-',
+        surname: 'Уточнить',
       };
+
+      input = input.trim();
 
       const arrFio = input.split(' ');
       if (arrFio.length > 1) {
