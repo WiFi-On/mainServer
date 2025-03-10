@@ -602,7 +602,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [techId=''] - айди технологии подключения.
    * @returns {Promise<tariffMrfI>} Возвращает айди организации.
    */
-  private async getSHPDtariffMRF(regionId: string, cityId: string, streetId: string, houseId: string, flat: string, techId: string): Promise<tariffMrfI> {
+  async getSHPDtariffMRF(regionId: string, cityId: string, streetId: string, houseId: string, flat: string, techId: string): Promise<tariffMrfI> {
     const endpoint = 'https://eissd.rt.ru/mpz/ajax/get_mrf_tariffs_list';
 
     try {
@@ -632,6 +632,13 @@ export class EissdService implements OnModuleInit {
         return null;
       }
 
+      let productAsrTariffId = '';
+      let productTariffName = '';
+      if (response.data.result.length > 0) {
+        productAsrTariffId = response.data.result[0].asrTariffId;
+        productTariffName = response.data.result[0].title;
+      }
+
       const result = {
         productTypeRequest: 0,
         serviceId: 10000,
@@ -645,8 +652,8 @@ export class EissdService implements OnModuleInit {
           },
         ],
         productRegion: regionId,
-        productAsrTariffId: response.data.result[0].asrTariffId,
-        productTariffName: response.data.result[0].title,
+        productAsrTariffId,
+        productTariffName,
       };
 
       return result; // Возвращаем данные ответа
@@ -695,6 +702,13 @@ export class EissdService implements OnModuleInit {
         return null;
       }
 
+      let productAsrTariffId = '';
+      let productTariffName = '';
+      if (response.data.result.length > 0) {
+        productAsrTariffId = response.data.result[0].asrTariffId;
+        productTariffName = response.data.result[0].title;
+      }
+
       const result = {
         productTypeRequest: 0,
         serviceId: 10004,
@@ -708,8 +722,8 @@ export class EissdService implements OnModuleInit {
           },
         ],
         productRegion: regionId,
-        productAsrTariffId: response.data.result[0].asrTariffId,
-        productTariffName: response.data.result[0].title,
+        productAsrTariffId,
+        productTariffName,
       };
 
       return result; // Возвращаем данные ответа
