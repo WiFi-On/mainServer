@@ -6,6 +6,6 @@ export default interface tariffMrfI {
   typeTariff: number;
   params: { paramKey: string; paramValue: string }[]; // Corrected
   productRegion: string;
-  productAsrTariffId: any;
-  productTariffName: any;
+  productAsrTariffId?: any;
+  productTariffName?: any;
 }

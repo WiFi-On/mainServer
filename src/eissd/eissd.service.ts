@@ -652,8 +652,8 @@ export class EissdService implements OnModuleInit {
           },
         ],
         productRegion: regionId,
-        productAsrTariffId,
-        productTariffName,
+        ...(productAsrTariffId ? { productAsrTariffId } : {}),
+        ...(productTariffName ? { productTariffName } : {}),
       };
 
       return result; // Возвращаем данные ответа
@@ -722,8 +722,8 @@ export class EissdService implements OnModuleInit {
           },
         ],
         productRegion: regionId,
-        productAsrTariffId,
-        productTariffName,
+        ...(productAsrTariffId ? { productAsrTariffId } : {}),
+        ...(productTariffName ? { productTariffName } : {}),
       };
 
       return result; // Возвращаем данные ответа
