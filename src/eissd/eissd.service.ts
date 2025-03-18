@@ -1032,6 +1032,10 @@ export class EissdService implements OnModuleInit {
       '09': 35,
       '14': 69,
       '02': 14,
+      '05': 22,
+      '06': 27,
+      '30': 13,
+      '07': 30,
     };
 
     try {
