@@ -5,9 +5,14 @@ import { Cron } from '@nestjs/schedule';
 import { BitrixStatuses } from 'src/bitrix/interfaces/BitrixStatuses.interface';
 import { BitrixService } from 'src/bitrix/bitrix.service';
 import { LoggerService } from 'src/logger/logger.service';
+import { FormingApplicationResult } from 'src/eissd/interfaces/interfaces';
 @Injectable()
 export class SchedulerService {
   private readonly enviroment: string;
+  private readonly notMVNO: string[];
+  private readonly commentNotMVNO: string;
+  private readonly comment: string;
+
   constructor(
     @Inject(ConfigService) private readonly configService: ConfigService,
     private readonly eissdService: EissdService,
@@ -15,6 +20,9 @@ export class SchedulerService {
     private readonly logger: LoggerService,
   ) {
     this.enviroment = this.configService.get<string>('ENV');
+    this.notMVNO = ['02', '14', '28', '27', '15', '09', '07', '30', '06', '05'];
+    this.commentNotMVNO = 'Технологии развлечений . Интернет + ТВ . Продавец: ИП Кривошеин ЯП';
+    this.comment = "Техно выгоды. Интернет + ТВ + СВЯЗЬ Продавец: ИП Кривошеин ЯП'";
   }
 
   async onModuleInit(): Promise<void> {
@@ -51,7 +59,13 @@ export class SchedulerService {
             const { name, surname } = await this.eissdService.formatedFIO(lead.fio);
 
             // Создаем заявку и отправляем в eissd
-            const application = await this.eissdService.formingApplication(lead.number, name, surname, thv);
+            let application: FormingApplicationResult;
+            if (this.notMVNO.includes(thv.infoAddress.regionId)) {
+              application = await this.eissdService.formingApplication(lead.number, name, surname, thv, false, this.commentNotMVNO);
+            } else {
+              application = await this.eissdService.formingApplication(lead.number, name, surname, thv, true, this.comment);
+            }
+
             // Если при создании заявки что то пошло не так, то возвращаем ошибку в битрикс в комментарии.
             if (application.err) {
               this.logger.error(`Заявка не заведена. Адрес: ${lead.address}. Причина: ${application.result}`, 'scheduler/creatingApplications', application.result, {

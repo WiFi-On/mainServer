@@ -12,15 +12,12 @@ import { xml2js } from 'xml-js';
 import { URLSearchParams } from 'url';
 // src
 import { DadataService } from '../dadata/dadata.service';
+
 import { DistrictRepository } from '../db2/repositories/districts.repository';
 import { StreetRepository } from '../db2/repositories/streets.repository';
 import { HouseRepository } from '../db2/repositories/houses.repository';
-import { ResultThvEissdI, ReturnDataConnectionPosI } from './interfaces/thv.interface';
-import tariffMrfI from './interfaces/tariffMrf.interface';
-import tariffI from './interfaces/tariff.interface';
-import OptionI from './interfaces/option.interface';
-import tariffSimI from './interfaces/tariffSim.interface';
-import { StatusesApplicationI } from './interfaces/statusesApplication.interface';
+// interfaces
+import * as interfaces from './interfaces/interfaces';
 
 @Injectable()
 export class EissdService implements OnModuleInit {
@@ -234,7 +231,14 @@ export class EissdService implements OnModuleInit {
    * @param {string} [fio=''] - ФИО клиента.
    * @returns {Promise<BitrixReturnData>} Данные, возвращаемые системой Bitrix24 при успешном создании контакта.
    */
-  async formingApplication(number: string, name: string, surname: string, thv: ResultThvEissdI): Promise<{ err: boolean; result: string; idApplication?: string }> {
+  async formingApplication(
+    number: string,
+    name: string,
+    surname: string,
+    thv: interfaces.ResultThvEissdI,
+    SIM: boolean,
+    comment: string,
+  ): Promise<interfaces.FormingApplicationResult> {
     const result = {
       err: false,
       result: '',
@@ -277,15 +281,22 @@ export class EissdService implements OnModuleInit {
         result.result = 'Тариф IPTV не найден';
         return result;
       }
-      const sim = await this.getSIMtariff(thv.infoAddress.regionId, orgId, thv.infoAddress.regionFullName);
-      if (!sim) {
-        result.err = true;
-        result.result = 'Тариф SIM не найден';
-        return result;
+
+      const tariffs = [shpd, iptv];
+
+      let sim: interfaces.TariffSimI;
+      if (SIM) {
+        sim = await this.getSIMtariff(thv.infoAddress.regionId, orgId, thv.infoAddress.regionFullName);
+        if (!sim) {
+          result.err = true;
+          result.result = 'Тариф SIM не найден';
+          return result;
+        }
+        tariffs.push(sim);
       }
 
       const phone = await this.formatedPhoneNumber(number);
-      const eissdApplication = await this.sendAplication(name, surname, phone, [shpd, iptv, sim], orgId, thv);
+      const eissdApplication = await this.sendAplication(name, surname, phone, tariffs, orgId, comment, thv);
 
       if (Object.keys(eissdApplication).length > 2) {
         if (thv.result.thv && thv.result.Res == 'Y') {
@@ -334,7 +345,7 @@ export class EissdService implements OnModuleInit {
       throw Error('Ошибка в авторизации в Eissd: ' + error.message);
     }
   }
-  async getStatusesApplication(id: string): Promise<StatusesApplicationI[]> {
+  async getStatusesApplication(id: string): Promise<interfaces.StatusesApplicationI[]> {
     // Подготовка запроса
     const requestBody = `
       <GetSvcClassOrderStatusAgent>
@@ -359,7 +370,7 @@ export class EissdService implements OnModuleInit {
     }
 
     const arrStatusesXML = parsXml.GetSvcClassOrderStatusAgent[0].taskStatusList[0].taskStatusListElement;
-    const result: StatusesApplicationI[] = [];
+    const result: interfaces.StatusesApplicationI[] = [];
 
     for (let i = 0; i < arrStatusesXML.length; i++) {
       result.push({
@@ -386,7 +397,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [address=''] - Адрес который нужно проверить.
    * @returns {Promise<ResultThvEissdIing>} Возвращает данные по технической возможности и информацию о адресе.
    */
-  async checkTHV(address: string): Promise<ResultThvEissdI> {
+  async checkTHV(address: string): Promise<interfaces.ResultThvEissdI> {
     // Получаем текущую дату
     const currentDate = new Date();
     let dateNow = currentDate.toISOString();
@@ -521,7 +532,7 @@ export class EissdService implements OnModuleInit {
     }
 
     // Поиск технической возможности
-    let formattedResult: ReturnDataConnectionPosI;
+    let formattedResult: interfaces.ReturnDataConnectionPosI;
     try {
       const validTechNames = ['PON', 'FTTx', 'xDSL', 'WBA', 'DOCSIS'];
       const result = parsXml.CheckConnectionPossibilityAgent[0].ConnectionPoss[0].ConnectionPos.find((pos) => {
@@ -602,7 +613,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [techId=''] - айди технологии подключения.
    * @returns {Promise<tariffMrfI>} Возвращает айди организации.
    */
-  async getSHPDtariffMRF(regionId: string, cityId: string, streetId: string, houseId: string, flat: string, techId: string): Promise<tariffMrfI> {
+  async getSHPDtariffMRF(regionId: string, cityId: string, streetId: string, houseId: string, flat: string, techId: string): Promise<interfaces.TariffMrfI> {
     const endpoint = 'https://eissd.rt.ru/mpz/ajax/get_mrf_tariffs_list';
 
     try {
@@ -672,7 +683,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [techId=''] - айди технологии подключения.
    * @returns {Promise<tariffMrfI>} Возвращает
    */
-  private async getIPTVtariffMRF(regionId: string, cityId: string, streetId: string, houseId: string, flat: string, techId: string): Promise<tariffMrfI> {
+  private async getIPTVtariffMRF(regionId: string, cityId: string, streetId: string, houseId: string, flat: string, techId: string): Promise<interfaces.TariffMrfI> {
     const endpoint = 'https://eissd.rt.ru/mpz/ajax/get_mrf_tariffs_list';
 
     try {
@@ -740,7 +751,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [techId=''] - айди технологии подключения.
    * @returns {Promise<tariffI>} Возвращает айди организации.
    */
-  private async getSHPDtariff(regionId: string, districtId: string, techId: string): Promise<tariffI> {
+  private async getSHPDtariff(regionId: string, districtId: string, techId: string): Promise<interfaces.TariffI> {
     const endpoint = 'https://eissd.rt.ru/ajax/internet/get.tariff.list';
 
     try {
@@ -793,7 +804,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [techId=''] - айди технологии подключения.
    * @returns {Promise<tariffI>} Возвращает айди организации.
    */
-  private async getIPTVtariff(regionId: string, districtId: string, techId: string): Promise<tariffI> {
+  private async getIPTVtariff(regionId: string, districtId: string, techId: string): Promise<interfaces.TariffI> {
     const endpoint = 'https://eissd.rt.ru/ajax/iptv/get.tariff.list';
 
     try {
@@ -847,7 +858,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [techId=''] - айди технологии подключения.
    * @returns {Promise<OptionI>} Возвращает объект опции для тарифа.
    */
-  private async getSHPDoptionsTariff(regionId: string, tariffId: string, techId: string): Promise<OptionI> {
+  private async getSHPDoptionsTariff(regionId: string, tariffId: string, techId: string): Promise<interfaces.OptionI> {
     const endpoint = 'https://eissd.rt.ru/mpz/ajax/internet/tariff_options';
 
     try {
@@ -899,7 +910,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [tariffId=''] - айди тарифа.
    * @returns {Promise<OptionI>} Возвращает объект опции для тарифа.
    */
-  private async getIPTVoptionsTariff(regionId: string, tariffId: string): Promise<OptionI> {
+  private async getIPTVoptionsTariff(regionId: string, tariffId: string): Promise<interfaces.OptionI> {
     const endpoint = 'https://eissd.rt.ru/mpz/ajax/iptv/tariff_options';
 
     try {
@@ -957,7 +968,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [regionFullName=''] - полное название региона.
    * @returns {Promise<tariffSimI>} Возвращает объект опции для тарифа.
    */
-  private async getSIMtariff(region: string, orgId: string, regionFullName: string): Promise<tariffSimI> {
+  private async getSIMtariff(region: string, orgId: string, regionFullName: string): Promise<interfaces.TariffSimI> {
     const endpoint = 'https://eissd.rt.ru/ajax/mvno/get.tp.list';
     const mvnoRegions = {
       '66': 1,
@@ -1060,7 +1071,7 @@ export class EissdService implements OnModuleInit {
 
       const resultResponse = response.data.result;
 
-      const result: tariffSimI = {
+      const result: interfaces.TariffSimI = {
         serviceId: 10003,
         typeProduct: 1,
         typeTariff: 0,
@@ -1094,7 +1105,15 @@ export class EissdService implements OnModuleInit {
    * @param {string} [eissdInfo=''] - Объект из функции для получения тхв, что бы брать от туда нужную инфу.
    * @returns {Promise<any>} Потому что там приходит огромнейший объект и иногда разный.
    */
-  private async sendAplication(name: string, lastname: string, phone: string, tariffs: any[], orgId: string, eissdInfo: ResultThvEissdI): Promise<any> {
+  private async sendAplication(
+    name: string,
+    lastname: string,
+    phone: string,
+    tariffs: any[],
+    orgId: string,
+    comment: string,
+    eissdInfo: interfaces.ResultThvEissdI,
+  ): Promise<any> {
     const endpoint = 'https://eissd.rt.ru/sales/api/ajax/save-order';
 
     try {
@@ -1120,11 +1139,11 @@ export class EissdService implements OnModuleInit {
         orgId: orgId,
         personnalAccount: '',
         regionId: eissdInfo.infoAddress.regionId,
-        requestContent: 'Техно выгоды. Интернет + ТВ + СВЯЗЬ Продавец: ИП Кривошеин ЯП',
+        requestContent: comment,
         params: [
           {
             key: 'request_content',
-            value: 'Техно выгоды. Интернет + ТВ + СВЯЗЬ Продавец: ИП Кривошеин ЯП',
+            value: comment,
           },
         ],
         requestNumber: '',
