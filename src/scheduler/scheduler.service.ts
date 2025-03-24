@@ -5,7 +5,6 @@ import { Cron } from '@nestjs/schedule';
 import { BitrixStatuses } from 'src/bitrix/interfaces/BitrixStatuses.interface';
 import { BitrixService } from 'src/bitrix/bitrix.service';
 import { LoggerService } from 'src/logger/logger.service';
-import { FormingApplicationResult } from 'src/eissd/interfaces/interfaces';
 @Injectable()
 export class SchedulerService {
   private readonly enviroment: string;
@@ -59,12 +58,7 @@ export class SchedulerService {
             const { name, surname } = await this.eissdService.formatedFIO(lead.fio);
 
             // Создаем заявку и отправляем в eissd
-            let application: FormingApplicationResult;
-            if (this.notMVNO.includes(thv.infoAddress.regionId)) {
-              application = await this.eissdService.formingApplication(lead.number, name, surname, thv, false, this.commentNotMVNO);
-            } else {
-              application = await this.eissdService.formingApplication(lead.number, name, surname, thv, true, this.comment);
-            }
+            const application = await this.eissdService.formingApplication(lead.number, name, surname, thv);
 
             // Если при создании заявки что то пошло не так, то возвращаем ошибку в битрикс в комментарии.
             if (application.err) {

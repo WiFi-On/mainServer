@@ -23,6 +23,9 @@ import * as interfaces from './interfaces/interfaces';
 export class EissdService implements OnModuleInit {
   private readonly pathKeyProduct: string;
   private readonly pathCertProduct: string;
+  private readonly notMVNO: string[];
+  private readonly commentNotMVNO: string;
+  private readonly comment: string;
   private readonly pathKeyDev: string;
   private readonly pathCertDev: string;
   private readonly enviroment: string;
@@ -199,6 +202,9 @@ export class EissdService implements OnModuleInit {
       '1001': 'Ростелеком Лицей',
       '1044': 'Ростелеком Юрист',
     };
+    this.notMVNO = ['02', '14', '28', '27', '15', '09', '07', '30', '06', '05'];
+    this.commentNotMVNO = 'Технологии развлечений . Интернет + ТВ . Продавец: ИП Кривошеин ЯП';
+    this.comment = "Техно выгоды. Интернет + ТВ + СВЯЗЬ Продавец: ИП Кривошеин ЯП'";
   }
   /**
    * Функция запускается при инициализации модуля. Нужно для получения куки файла сессии, что бы в дальнейшем можно было использовать нужные ручки.
@@ -231,14 +237,7 @@ export class EissdService implements OnModuleInit {
    * @param {string} [fio=''] - ФИО клиента.
    * @returns {Promise<BitrixReturnData>} Данные, возвращаемые системой Bitrix24 при успешном создании контакта.
    */
-  async formingApplication(
-    number: string,
-    name: string,
-    surname: string,
-    thv: interfaces.ResultThvEissdI,
-    SIM: boolean,
-    comment: string,
-  ): Promise<interfaces.FormingApplicationResult> {
+  async formingApplication(number: string, name: string, surname: string, thv: interfaces.ResultThvEissdI): Promise<interfaces.FormingApplicationResult> {
     const result = {
       err: false,
       result: '',
@@ -247,9 +246,11 @@ export class EissdService implements OnModuleInit {
 
     try {
       const orgId = await this.getOrgId(thv.infoAddress.regionId);
+      let comment = this.commentNotMVNO;
 
       // Получение тарифов
-      let shpd: any, iptv: any;
+      const tariffs = [];
+      let shpd: any, iptv: any, sim: any;
       if (this.mrfRegions.includes(thv.infoAddress.regionId)) {
         shpd = await this.getSHPDtariffMRF(
           thv.infoAddress.regionId,
@@ -281,11 +282,10 @@ export class EissdService implements OnModuleInit {
         result.result = 'Тариф IPTV не найден';
         return result;
       }
+      tariffs.push(shpd);
+      tariffs.push(iptv);
 
-      const tariffs = [shpd, iptv];
-
-      let sim: interfaces.TariffSimI;
-      if (SIM) {
+      if (!this.notMVNO.includes(thv.infoAddress.regionId)) {
         sim = await this.getSIMtariff(thv.infoAddress.regionId, orgId, thv.infoAddress.regionFullName);
         if (!sim) {
           result.err = true;
@@ -293,6 +293,7 @@ export class EissdService implements OnModuleInit {
           return result;
         }
         tariffs.push(sim);
+        comment = this.comment;
       }
 
       const phone = await this.formatedPhoneNumber(number);
