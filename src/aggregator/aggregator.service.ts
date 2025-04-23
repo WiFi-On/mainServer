@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Tariff } from '../db1/entities/tariff.entity';
 import { Provider } from '../db1/entities/provider.entity';
 import { District } from '../db1/entities/district.entity';
@@ -8,6 +8,7 @@ import * as crypto from 'crypto';
 import { TariffsRepository } from '../db1/repositories/tariffs.repository';
 import { ProvidersRepository } from '../db1/repositories/providers.repository';
 import { DistrictsRepository } from '../db1/repositories/districts.repository';
+import { EISSD_PROVIDER_AUTOLEAD } from 'src/eissd/eissd.provider';
 
 @Injectable()
 export class AggregatorService {
@@ -16,7 +17,7 @@ export class AggregatorService {
     private readonly providersRepository: ProvidersRepository,
     private readonly districtsRepository: DistrictsRepository,
     private readonly dadataService: DadataService,
-    private readonly eissdService: EissdService,
+    @Inject(EISSD_PROVIDER_AUTOLEAD) private readonly eissdService: EissdService,
   ) {}
   // Утилиты
   async hashAddress(address: string): Promise<string> {

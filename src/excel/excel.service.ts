@@ -8,15 +8,15 @@ import { AggregatorService } from '../aggregator/aggregator.service';
 import { EmailService } from '../email/email.service';
 import { EissdService } from '../eissd/eissd.service';
 import { LoggerService } from '../logger/logger.service';
+import { EISSD_PROVIDER_EXCEL } from 'src/eissd/eissd.provider';
 
 @Injectable()
 export class ExcelService {
   constructor(
-    @Inject(AggregatorService)
-    private readonly aggregatorService: AggregatorService,
+    @Inject(EISSD_PROVIDER_EXCEL) private readonly eissdService: EissdService,
+    @Inject(AggregatorService) private readonly aggregatorService: AggregatorService,
     private readonly dadataService: DadataService,
     private readonly emailService: EmailService,
-    private readonly eissdService: EissdService,
     private readonly logger: LoggerService,
   ) {}
 
@@ -225,6 +225,9 @@ export class ExcelService {
       const address = data[i][2];
       try {
         const thv = await this.eissdService.checkTHV(address);
+        // По просьбе руководителя, что бы везде указывался xDSL в любом случае.
+        thv.result.TechName = 'xDSL';
+        thv.result.TechId = '10035';
         const result = await this.eissdService.formingApplication(number, name, surname, thv);
 
         data[i].push(result.result + ' ' + result.idApplication);

@@ -5,6 +5,7 @@ import { Cron } from '@nestjs/schedule';
 import { BitrixStatuses } from 'src/bitrix/interfaces/BitrixStatuses.interface';
 import { BitrixService } from 'src/bitrix/bitrix.service';
 import { LoggerService } from 'src/logger/logger.service';
+import { EISSD_PROVIDER_AUTOLEAD } from 'src/eissd/eissd.provider';
 @Injectable()
 export class SchedulerService {
   private readonly enviroment: string;
@@ -14,7 +15,7 @@ export class SchedulerService {
 
   constructor(
     @Inject(ConfigService) private readonly configService: ConfigService,
-    private readonly eissdService: EissdService,
+    @Inject(EISSD_PROVIDER_AUTOLEAD) private readonly eissdService: EissdService,
     private readonly bitrixService: BitrixService,
     private readonly logger: LoggerService,
   ) {

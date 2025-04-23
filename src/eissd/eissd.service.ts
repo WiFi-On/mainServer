@@ -21,13 +21,11 @@ import * as interfaces from './interfaces/interfaces';
 
 @Injectable()
 export class EissdService implements OnModuleInit {
-  private readonly pathKeyProduct: string;
-  private readonly pathCertProduct: string;
+  private pathKeyProduct: string;
+  private pathCertProduct: string;
   private readonly notMVNO: string[];
   private readonly commentNotMVNO: string;
   private readonly comment: string;
-  private readonly pathKeyDev: string;
-  private readonly pathCertDev: string;
   private readonly enviroment: string;
   private readonly mrfRegions: string[];
   private readonly techIds: { [key: string]: string };
@@ -35,6 +33,8 @@ export class EissdService implements OnModuleInit {
   private readonly statusIds: { [key: string]: string };
   private readonly serviceIds: { [key: string]: string };
   private sessionId: string;
+  private login: string;
+  private password: string;
   constructor(
     @Inject(ConfigService) private readonly configService: ConfigService,
     private readonly dadataService: DadataService,
@@ -43,10 +43,6 @@ export class EissdService implements OnModuleInit {
     private readonly houseRepository: HouseRepository,
     private readonly httpService: HttpService,
   ) {
-    this.pathKeyProduct = this.configService.get<string>('EISSD_KEY_PRODUCT');
-    this.pathCertProduct = this.configService.get<string>('EISSD_CERT_PRODUCT');
-    this.pathKeyDev = this.configService.get<string>('EISSD_KEY_DEV');
-    this.pathCertDev = this.configService.get<string>('EISSD_CERT_DEV');
     this.enviroment = this.configService.get<string>('ENV');
     this.mrfRegions = [
       '28',
@@ -216,16 +212,25 @@ export class EissdService implements OnModuleInit {
     }
   }
 
+  setCredentials({ cert, key, login, password }: { cert: string; key: string; login: string; password: string }) {
+    this.pathCertProduct = cert;
+    this.pathKeyProduct = key;
+    this.login = login;
+    this.password = password;
+  }
+
+  async initSession() {
+    this.sessionId = await this.authEissd();
+  }
+
   /**
    * Формируем полностью заявку и отправляем ее.
-   * 1) Получение технической возможности и информации по адресу. Техническая возможность - можно ли подключать клиента по адресу и по какой технологии.
-   * 2) Получение id организации, потому что для каждого региона своя организация.
-   * 3) Получение тарифа SHPD. SHPD - Интернет. У них на сайте 2 возможности получения таких тарифов. Для mrf регионов и для обычных регионов. Без понятия по каким принципам это работает, но мне все равно пришлось проверять каждый регион в ручную.
+   * 1) Получение тарифа SHPD. SHPD - Интернет. У них на сайте 2 возможности получения таких тарифов. Для mrf регионов и для обычных регионов. Без понятия по каким принципам это работает, но мне все равно пришлось проверять каждый регион в ручную.
    * this.mrfRegionList нужна для знания о мрф регионов.
-   * 4) По такому же принципу мы получаем IPTV. IPTV - телевидение.
-   * 5) Получение SIM. SIM - симка. Работает тоже странно. Для каждого региона, есть свой айди и если на каком то адресе не находит симку, то нужно просто добавить в объект mvnoRegions с этим айди.
-   * 6) Дальше создания объекта для заявки. Тут мы указываем раннее полученные данные и отправляем.
-   * 7) После получения информации о заведении, в зависимости от статуса мы распределяем по битриксу.
+   * 2) По такому же принципу мы получаем IPTV. IPTV - телевидение.
+   * 3) Получение SIM. SIM - симка. Работает тоже странно. Для каждого региона, есть свой айди и если на каком то адресе не находит симку, то нужно просто добавить в объект mvnoRegions с этим айди.
+   * 4) Дальше создания объекта для заявки. Тут мы указываем раннее полученные данные и отправляем.
+   * 5) После получения информации о заведении, в зависимости от статуса мы распределяем по битриксу.
    *
    * Все обернуто в try-catch, потому что без понятия что можно произойти. Это непредсказуемая система без документации. Весь код написан через синяки.
    *
@@ -285,6 +290,9 @@ export class EissdService implements OnModuleInit {
       tariffs.push(shpd);
       tariffs.push(iptv);
 
+      console.log(shpd);
+      console.log(iptv);
+
       if (!this.notMVNO.includes(thv.infoAddress.regionId)) {
         sim = await this.getSIMtariff(thv.infoAddress.regionId, orgId, thv.infoAddress.regionFullName);
         if (!sim) {
@@ -325,8 +333,8 @@ export class EissdService implements OnModuleInit {
   private async authEissd(): Promise<string> {
     const url = 'https://eissd.rt.ru/mod/auth/ajax/authentication/login';
     const formData = new URLSearchParams();
-    formData.append('login', this.configService.get<string>('EISSD_LOGIN'));
-    formData.append('passw', this.configService.get<string>('EISSD_PASSWORD'));
+    formData.append('login', this.login);
+    formData.append('passw', this.password);
     formData.append('closeOthers', '1');
 
     try {
